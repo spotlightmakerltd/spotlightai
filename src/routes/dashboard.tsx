@@ -1,0 +1,205 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { AppNavbar } from "@/components/AppNavbar";
+import { GenerateForm, type AdFormValues } from "@/components/GenerateForm";
+import { HistoryPanel } from "@/components/HistoryPanel";
+import { GENERATION_STEPS, ScriptStudio } from "@/components/ScriptStudio";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase, type VideoGeneration } from "@/lib/supabase";
+import { generateAdScript, type AdScript } from "@/lib/script.functions";
+
+export const Route = createFileRoute("/dashboard")({
+  ssr: false,
+  head: () => ({
+    meta: [
+      { title: "Dashboard — SpotlightMaker Ad Studio" },
+      {
+        name: "description",
+        content:
+          "Generate, style and export AI short-form video ad scripts with hook, body and outro scenes.",
+      },
+      { property: "og:title", content: "SpotlightMaker Dashboard" },
+      {
+        property: "og:description",
+        content: "Your AI ad studio: scripts, captions and 9:16 exports.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: Dashboard,
+});
+
+function Dashboard() {
+  const navigate = useNavigate();
+  const { user, profile, loading, refreshProfile } = useAuth();
+  const [history, setHistory] = useState<VideoGeneration[]>([]);
+  const [script, setScript] = useState<AdScript | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [step, setStep] = useState(0);
+  const [meta, setMeta] = useState({ businessName: "", durationSeconds: 30 });
+
+  useEffect(() => {
+    if (!loading && !user) void navigate({ to: "/auth", replace: true });
+  }, [loading, user, navigate]);
+
+  // Clear all screen state when the session ends.
+  useEffect(() => {
+    if (!user) {
+      setHistory([]);
+      setScript(null);
+      setActiveId(null);
+    }
+  }, [user]);
+
+  const loadHistory = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("video_generations")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(30);
+    setHistory((data as VideoGeneration[]) ?? []);
+  }, [user]);
+
+  useEffect(() => {
+    void loadHistory();
+  }, [loadHistory]);
+
+  async function handleGenerate(values: AdFormValues, cost: number) {
+    if (!user) return;
+    setBusy(true);
+    setStep(0);
+    setScript(null);
+    setMeta({ businessName: values.businessName, durationSeconds: values.durationSeconds });
+
+    const prompt = `${values.businessName} | ${values.niche} | ${values.campaignGoal} | ${values.targetAudience} | ${values.durationSeconds}s`;
+
+    const { data: row, error: insertError } = await supabase
+      .from("video_generations")
+      .insert({
+        user_id: user.id,
+        business_name: values.businessName,
+        niche: values.niche,
+        campaign_goal: values.campaignGoal,
+        target_audience: values.targetAudience,
+        duration_seconds: values.durationSeconds,
+        credits_used: cost,
+        prompt_input: prompt,
+        status: "processing",
+      })
+      .select("*")
+      .single();
+
+    if (insertError || !row) {
+      setBusy(false);
+      toast.error(insertError?.message ?? "Could not start generation");
+      return;
+    }
+
+    const { error: creditError } = await supabase.rpc("deduct_credits", { amount: cost });
+    if (creditError) {
+      await supabase
+        .from("video_generations")
+        .update({ status: "failed" })
+        .eq("id", (row as VideoGeneration).id);
+      setBusy(false);
+      toast.error(
+        creditError.message.includes("INSUFFICIENT")
+          ? "Not enough credits for this ad length."
+          : creditError.message,
+      );
+      void loadHistory();
+      return;
+    }
+    void refreshProfile();
+
+    const timers = GENERATION_STEPS.map((_, i) =>
+      setTimeout(() => setStep(i), i * 900),
+    );
+
+    try {
+      const result = await generateAdScript({
+        data: {
+          businessName: values.businessName,
+          niche: values.niche,
+          campaignGoal: values.campaignGoal,
+          targetAudience: values.targetAudience,
+          durationSeconds: values.durationSeconds,
+        },
+      });
+      timers.forEach(clearTimeout);
+      setStep(GENERATION_STEPS.length - 1);
+      await supabase
+        .from("video_generations")
+        .update({ status: "completed", script: result })
+        .eq("id", (row as VideoGeneration).id);
+      setScript(result);
+      setActiveId((row as VideoGeneration).id);
+      toast.success("Ad script ready");
+    } catch {
+      timers.forEach(clearTimeout);
+      await supabase
+        .from("video_generations")
+        .update({ status: "failed" })
+        .eq("id", (row as VideoGeneration).id);
+      toast.error("Generation failed. Your credits were used for the attempt — contact support.");
+    } finally {
+      setBusy(false);
+      void loadHistory();
+    }
+  }
+
+  if (loading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+        Loading your studio…
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen">
+      <AppNavbar />
+      <main className="surface-glow mx-auto max-w-[1600px] px-4 py-6 sm:px-6">
+        <h1 className="sr-only">SpotlightMaker dashboard</h1>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] xl:grid-cols-[280px_minmax(0,1fr)_minmax(0,1.1fr)]">
+          <div className="order-3 xl:order-1">
+            <HistoryPanel
+              items={history}
+              activeId={activeId}
+              onSelect={(item) => {
+                setActiveId(item.id);
+                setScript((item.script as AdScript) ?? null);
+                setMeta({
+                  businessName: item.business_name,
+                  durationSeconds: item.duration_seconds,
+                });
+              }}
+            />
+          </div>
+          <div className="order-1 xl:order-2">
+            <GenerateForm
+              onSubmit={handleGenerate}
+              busy={busy}
+              credits={Number(profile?.credits ?? 0)}
+            />
+          </div>
+          <div className="order-2 xl:order-3">
+            <ScriptStudio
+              script={script}
+              busy={busy}
+              step={step}
+              businessName={meta.businessName}
+              durationSeconds={meta.durationSeconds}
+              isPaid={(profile?.subscription_tier ?? "free") !== "free"}
+            />
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
