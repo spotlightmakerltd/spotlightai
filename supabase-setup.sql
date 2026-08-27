@@ -106,3 +106,55 @@ end;
 $$;
 
 grant execute on function public.deduct_credits(numeric) to authenticated;
+
+-- 5. GENERATION TIMELINE EVENTS --------------------------------------------
+create table if not exists public.generation_events (
+  id uuid primary key default gen_random_uuid(),
+  generation_id uuid not null references public.video_generations(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  stage text not null,
+  status text not null default 'completed',
+  detail text,
+  created_at timestamptz not null default now()
+);
+
+grant select, insert on public.generation_events to authenticated;
+grant all on public.generation_events to service_role;
+
+alter table public.generation_events enable row level security;
+
+drop policy if exists "own events select" on public.generation_events;
+create policy "own events select" on public.generation_events
+  for select to authenticated using (auth.uid() = user_id);
+
+drop policy if exists "own events insert" on public.generation_events;
+create policy "own events insert" on public.generation_events
+  for insert to authenticated with check (auth.uid() = user_id);
+
+create index if not exists generation_events_gen_idx
+  on public.generation_events (generation_id, created_at asc);
+
+-- 6. CREDIT PURCHASES -------------------------------------------------------
+create table if not exists public.credit_purchases (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  provider text not null,
+  reference text not null unique,
+  pack_id text not null,
+  credits numeric not null,
+  amount_minor bigint not null,
+  currency text not null,
+  tier text not null default 'free',
+  status text not null default 'pending',
+  created_at timestamptz not null default now(),
+  completed_at timestamptz
+);
+
+grant select on public.credit_purchases to authenticated;
+grant all on public.credit_purchases to service_role;
+
+alter table public.credit_purchases enable row level security;
+
+drop policy if exists "own purchases select" on public.credit_purchases;
+create policy "own purchases select" on public.credit_purchases
+  for select to authenticated using (auth.uid() = user_id);
