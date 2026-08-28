@@ -8,6 +8,16 @@ import { GENERATION_STEPS, ScriptStudio } from "@/components/ScriptStudio";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase, type VideoGeneration } from "@/lib/supabase";
 import { generateAdScript, type AdScript } from "@/lib/script.functions";
+import { SetupGuide } from "@/components/SetupGuide";
+import { GenerationTimeline } from "@/components/GenerationTimeline";
+import { runSetupCheck, type SetupIssue } from "@/lib/setup-check";
+import {
+  fetchGenerationEvents,
+  logGenerationEvent,
+  type GenerationEvent,
+  type TimelineStage,
+} from "@/lib/timeline";
+import { confirmPurchase } from "@/lib/billing.functions";
 
 export const Route = createFileRoute("/dashboard")({
   ssr: false,
@@ -33,13 +43,29 @@ export const Route = createFileRoute("/dashboard")({
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { user, profile, loading, refreshProfile } = useAuth();
+  const { user, profile, session, loading, refreshProfile } = useAuth();
   const [history, setHistory] = useState<VideoGeneration[]>([]);
   const [script, setScript] = useState<AdScript | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState(0);
   const [meta, setMeta] = useState({ businessName: "", durationSeconds: 30 });
+  const [events, setEvents] = useState<GenerationEvent[]>([]);
+  const [issues, setIssues] = useState<SetupIssue[] | null>(null);
+  const [checking, setChecking] = useState(false);
+
+  const checkSetup = useCallback(async () => {
+    setChecking(true);
+    try {
+      setIssues(await runSetupCheck());
+    } finally {
+      setChecking(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user) void checkSetup();
+  }, [user, checkSetup]);
 
   useEffect(() => {
     if (!loading && !user) void navigate({ to: "/auth", replace: true });
@@ -68,6 +94,57 @@ function Dashboard() {
   useEffect(() => {
     void loadHistory();
   }, [loadHistory]);
+
+  const loadEvents = useCallback(async (generationId: string | null) => {
+    if (!generationId) {
+      setEvents([]);
+      return;
+    }
+    setEvents(await fetchGenerationEvents(generationId));
+  }, []);
+
+  useEffect(() => {
+    void loadEvents(activeId);
+  }, [activeId, loadEvents]);
+
+  // Return trip from Stripe / Paystack checkout — verify, credit, refresh balance.
+  useEffect(() => {
+    if (!session?.access_token) return;
+    const params = new URLSearchParams(window.location.search);
+    const reference = params.get("reference");
+    const provider = params.get("provider");
+    if (params.get("billing") === "cancelled") {
+      toast.info("Checkout cancelled — no charge was made.");
+      window.history.replaceState({}, "", "/dashboard");
+      return;
+    }
+    if (!reference || (provider !== "stripe" && provider !== "paystack")) return;
+    window.history.replaceState({}, "", "/dashboard");
+    void (async () => {
+      const res = await confirmPurchase({
+        data: { reference, provider, accessToken: session.access_token },
+      });
+      if (res.ok) {
+        await refreshProfile();
+        toast.success(
+          res.alreadyApplied
+            ? "This purchase was already applied."
+            : `Payment confirmed — ${res.credits} credits added.`,
+        );
+      } else {
+        toast.error(res.error ?? "We could not confirm that payment.");
+      }
+    })();
+  }, [session, refreshProfile]);
+
+  const recordStage = useCallback(
+    async (stage: TimelineStage, detail?: string) => {
+      if (!user || !activeId) return;
+      await logGenerationEvent({ generationId: activeId, userId: user.id, stage, detail });
+      await loadEvents(activeId);
+    },
+    [user, activeId, loadEvents],
+  );
 
   async function handleGenerate(values: AdFormValues, cost: number) {
     if (!user) return;
@@ -139,9 +216,29 @@ function Dashboard() {
         .eq("id", (row as VideoGeneration).id);
       setScript(result);
       setActiveId((row as VideoGeneration).id);
+      await logGenerationEvent({
+        generationId: (row as VideoGeneration).id,
+        userId: user.id,
+        stage: "script",
+        detail: `${result.scenes.length} scenes`,
+      });
+      await logGenerationEvent({
+        generationId: (row as VideoGeneration).id,
+        userId: user.id,
+        stage: "voiceover",
+        detail: `${values.durationSeconds}s voice track`,
+      });
+      await loadEvents((row as VideoGeneration).id);
       toast.success("Ad script ready");
     } catch {
       timers.forEach(clearTimeout);
+      await logGenerationEvent({
+        generationId: (row as VideoGeneration).id,
+        userId: user.id,
+        stage: "script",
+        status: "failed",
+        detail: "Script generation failed",
+      });
       await supabase
         .from("video_generations")
         .update({ status: "failed" })
@@ -157,6 +254,15 @@ function Dashboard() {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
         Loading your studio…
+      </div>
+    );
+  }
+
+  if (issues && issues.length > 0) {
+    return (
+      <div className="min-h-screen">
+        <AppNavbar />
+        <SetupGuide issues={issues} onRecheck={() => void checkSetup()} checking={checking} />
       </div>
     );
   }
@@ -196,7 +302,13 @@ function Dashboard() {
               businessName={meta.businessName}
               durationSeconds={meta.durationSeconds}
               isPaid={(profile?.subscription_tier ?? "free") !== "free"}
+              onStage={(stage, detail) => void recordStage(stage, detail)}
             />
+            {activeId && (
+              <div className="mt-6">
+                <GenerationTimeline events={events} />
+              </div>
+            )}
           </div>
         </div>
       </main>

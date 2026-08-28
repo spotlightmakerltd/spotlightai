@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { BuyCreditsDialog } from "@/components/BuyCreditsDialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme, THEMES } from "@/hooks/use-theme";
 import { formatCredits } from "@/lib/pricing";
@@ -36,6 +37,9 @@ export function AppNavbar() {
             <Zap className="size-3.5 text-primary" />
             {formatCredits(profile?.credits ?? 0)} credits
           </Badge>
+
+          <BuyCreditsDialog />
+
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

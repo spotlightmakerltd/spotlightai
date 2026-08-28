@@ -21,8 +21,9 @@ type AuthedUser = { id: string; email: string | null };
 
 async function serverClient() {
   const { createClient } = await import("@supabase/supabase-js");
-  const key = process.env["SUPABASE_SERVICE_ROLE_KEY"];
-  if (!key) throw new Error("MISSING_SUPABASE_SERVICE_ROLE_KEY");
+  const key =
+    process.env["SPOTLIGHT_SERVICE_ROLE_KEY"] ?? process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  if (!key) throw new Error("MISSING_SERVICE_ROLE_KEY");
   return createClient(process.env["SUPABASE_URL"] ?? SUPABASE_URL, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
@@ -202,6 +203,8 @@ export const confirmPurchase = createServerFn({ method: "POST" })
 export const billingStatus = createServerFn({ method: "GET" }).handler(async () => ({
   stripe: Boolean(process.env["STRIPE_SECRET_KEY"]),
   paystack: Boolean(process.env["PAYSTACK_SECRET_KEY"]),
-  serviceRole: Boolean(process.env["SUPABASE_SERVICE_ROLE_KEY"]),
+  serviceRole: Boolean(
+    process.env["SPOTLIGHT_SERVICE_ROLE_KEY"] ?? process.env["SUPABASE_SERVICE_ROLE_KEY"],
+  ),
   packs: CREDIT_PACKS.map((p) => p.id),
 }));

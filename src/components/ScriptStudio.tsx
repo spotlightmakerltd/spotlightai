@@ -21,6 +21,7 @@ import {
   renderAdVideo,
   type CaptionStyle,
 } from "@/lib/render-video";
+import type { TimelineStage } from "@/lib/timeline";
 
 export const GENERATION_STEPS = [
   "Scriptwriting",
@@ -36,6 +37,7 @@ export function ScriptStudio({
   businessName,
   durationSeconds,
   isPaid,
+  onStage,
 }: {
   script: AdScript | null;
   busy: boolean;
@@ -43,6 +45,7 @@ export function ScriptStudio({
   businessName: string;
   durationSeconds: number;
   isPaid: boolean;
+  onStage?: (stage: TimelineStage, detail?: string) => void;
 }) {
   const [style, setStyle] = useState<CaptionStyle>({
     fontFamily: CAPTION_FONTS[0]!.id,
@@ -128,6 +131,7 @@ export function ScriptStudio({
   async function makeVideo() {
     setRendering(true);
     setRenderPct(0);
+    onStage?.("captions", `${style.fontFamily.split(",")[0]} · ${style.fontSize}px`);
     try {
       const blob = await renderAdVideo({
         scenes,
@@ -139,8 +143,10 @@ export function ScriptStudio({
       });
       const url = URL.createObjectURL(blob);
       setVideoUrl(url);
+      onStage?.("render", `${durationSeconds}s vertical 9:16`);
       toast.success(isPaid ? "Video ready — watermark-free" : "Video ready (free plan watermark)");
     } catch {
+      onStage?.("render", "Browser blocked rendering");
       toast.error("Your browser blocked video rendering. Try Chrome on desktop or Android.");
     } finally {
       setRendering(false);
@@ -153,6 +159,7 @@ export function ScriptStudio({
     a.href = videoUrl;
     a.download = `${businessName || "spotlightmaker"}-ad-9x16.mp4`;
     a.click();
+    onStage?.("export", "MP4 downloaded");
   }
 
   const shareText = `${script.hookLine} ${script.cta} ${script.hashtags.join(" ")}`;
