@@ -25,7 +25,7 @@ export async function logGenerationEvent(input: {
   userId: string;
   stage: TimelineStage;
   status?: "completed" | "failed" | "running";
-  detail?: string;
+  detail?: string | undefined;
 }): Promise<void> {
   await supabase.from("generation_events").insert({
     generation_id: input.generationId,
