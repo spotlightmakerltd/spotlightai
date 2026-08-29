@@ -15,12 +15,9 @@ import {
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import type { AdScript } from "@/lib/script.functions";
-import {
-  CAPTION_FONTS,
-  HIGHLIGHT_COLORS,
-  renderAdVideo,
-  type CaptionStyle,
-} from "@/lib/render-video";
+import { CAPTION_FONTS, HIGHLIGHT_COLORS, type CaptionStyle } from "@/lib/render-video";
+import { SHOTSTACK_STATUS_LABEL, type ShotstackRenderStatus } from "@/lib/shotstack";
+import { getShotstackRender, submitShotstackRender } from "@/lib/shotstack.functions";
 import type { TimelineStage } from "@/lib/timeline";
 
 export const GENERATION_STEPS = [
