@@ -254,6 +254,14 @@ export function ScriptStudio({
                   onChange={(e) => setCaptions((c) => ({ ...c, [i]: e.target.value }))}
                 />
               </div>
+              <div className="mt-3 space-y-1">
+                <Label className="text-xs">Background image/video URL (optional)</Label>
+                <Input
+                  placeholder="https://…/clip.mp4 or image.jpg"
+                  value={backgrounds[i] ?? ""}
+                  onChange={(e) => setBackgrounds((b) => ({ ...b, [i]: e.target.value }))}
+                />
+              </div>
             </div>
           ))}
         </div>
