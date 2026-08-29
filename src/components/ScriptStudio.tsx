@@ -398,8 +398,9 @@ export function ScriptStudio({
           ))}
         </div>
         <p className="text-xs text-muted-foreground">
-          Render the video first, then upload the downloaded file to Instagram, TikTok or YouTube —
-          the buttons open each uploader with your caption copied-ready.
+          Your script, styled captions, background visuals and synthesised voiceover are assembled
+          into a 1080×1920 MP4 by Shotstack's cloud renderer. Download it, then upload to Instagram,
+          TikTok or YouTube with the buttons above.
         </p>
       </div>
     </div>
