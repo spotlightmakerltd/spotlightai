@@ -346,17 +346,24 @@ export function ScriptStudio({
             {isPaid ? "No watermark" : "Watermarked (free plan)"}
           </Badge>
         </div>
-        <Button onClick={() => void makeVideo()} disabled={rendering} className="bg-brand text-primary-foreground">
+        <Button
+          onClick={() => void makeVideo()}
+          disabled={rendering}
+          className="bg-brand text-primary-foreground"
+        >
           {rendering ? (
             <>
-              <Loader2 className="mr-1 size-4 animate-spin" /> Assembling {renderPct}%
+              <Loader2 className="mr-1 size-4 animate-spin" /> Rendering in the cloud…
             </>
           ) : (
             <>
-              <Film className="mr-1 size-4" /> Render vertical ad
+              <Film className="mr-1 size-4" /> Render MP4 with Shotstack
             </>
           )}
         </Button>
+        {rendering && renderStatus && (
+          <p className="text-xs text-muted-foreground">{renderStatus}</p>
+        )}
         {videoUrl && (
           <div className="space-y-3">
             <video
