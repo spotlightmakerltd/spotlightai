@@ -52,8 +52,9 @@ export function ScriptStudio({
     uppercase: true,
   });
   const [captions, setCaptions] = useState<Record<number, string>>({});
+  const [backgrounds, setBackgrounds] = useState<Record<number, string>>({});
   const [rendering, setRendering] = useState(false);
-  const [renderPct, setRenderPct] = useState(0);
+  const [renderStatus, setRenderStatus] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
