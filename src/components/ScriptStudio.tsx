@@ -127,27 +127,68 @@ export function ScriptStudio({
 
   async function makeVideo() {
     setRendering(true);
-    setRenderPct(0);
+    setVideoUrl(null);
+    setRenderStatus("Submitting render job to Shotstack…");
     onStage?.("captions", `${style.fontFamily.split(",")[0]} · ${style.fontSize}px`);
-    try {
-      const blob = await renderAdVideo({
-        scenes,
-        style,
+
+    const submitted = await submitShotstackRender({
+      data: {
+        title: script!.title,
+        businessName,
+        cta: script!.cta,
         durationSeconds,
         watermark: !isPaid,
-        businessName,
-        onProgress: (p) => setRenderPct(Math.round(p * 100)),
-      });
-      const url = URL.createObjectURL(blob);
-      setVideoUrl(url);
-      onStage?.("render", `${durationSeconds}s vertical 9:16`);
-      toast.success(isPaid ? "Video ready — watermark-free" : "Video ready (free plan watermark)");
-    } catch {
-      onStage?.("render", "Browser blocked rendering");
-      toast.error("Your browser blocked video rendering. Try Chrome on desktop or Android.");
-    } finally {
+        generateVoiceover: true,
+        style,
+        scenes: scenes.map((s, i) => ({
+          label: s.label,
+          caption: s.onScreenText,
+          voiceover: s.voiceover,
+          ...(backgrounds[i]?.trim() ? { backgroundUrl: backgrounds[i]!.trim() } : {}),
+        })),
+      },
+    }).catch(() => ({ ok: false as const, error: "Could not reach the render service." }));
+
+    if (!submitted.ok || !("id" in submitted) || !submitted.id) {
       setRendering(false);
+      setRenderStatus(null);
+      onStage?.("render", submitted.error ?? "Shotstack submission failed");
+      toast.error(submitted.error ?? "Shotstack submission failed");
+      return;
     }
+
+    const renderId = submitted.id;
+    onStage?.("voiceover", "Voiceover synthesised for cloud render");
+
+    for (let attempt = 0; attempt < 90; attempt++) {
+      await new Promise((r) => setTimeout(r, 4000));
+      let status: ShotstackRenderStatus;
+      try {
+        status = await getShotstackRender({ data: { id: renderId } });
+      } catch {
+        continue;
+      }
+      setRenderStatus(SHOTSTACK_STATUS_LABEL[status.status] ?? "Rendering…");
+      if (status.status === "done" && status.url) {
+        setVideoUrl(status.url);
+        setRendering(false);
+        setRenderStatus(null);
+        onStage?.("render", `${durationSeconds}s 1080×1920 MP4 rendered on Shotstack`);
+        toast.success(isPaid ? "MP4 ready — watermark-free" : "MP4 ready (free plan watermark)");
+        return;
+      }
+      if (status.status === "failed") {
+        setRendering(false);
+        setRenderStatus(null);
+        onStage?.("render", status.error ?? "Shotstack render failed");
+        toast.error(status.error ?? "Shotstack render failed");
+        return;
+      }
+    }
+
+    setRendering(false);
+    setRenderStatus(null);
+    toast.error("Render is taking longer than expected — try again in a moment.");
   }
 
   function downloadVideo() {
@@ -155,6 +196,8 @@ export function ScriptStudio({
     const a = document.createElement("a");
     a.href = videoUrl;
     a.download = `${businessName || "spotlightmaker"}-ad-9x16.mp4`;
+    a.target = "_blank";
+    a.rel = "noreferrer";
     a.click();
     onStage?.("export", "MP4 downloaded");
   }
