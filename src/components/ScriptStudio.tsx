@@ -373,8 +373,19 @@ export function ScriptStudio({
               className="mx-auto aspect-[9/16] w-full max-w-[260px] rounded-xl border border-border"
             />
             <Button variant="outline" onClick={downloadVideo} className="w-full">
-              <Download className="mr-1 size-4" /> Download for mobile
+              <Download className="mr-1 size-4" /> Download MP4
             </Button>
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-xs font-medium">Final video URL</p>
+              <a
+                href={videoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="break-all text-xs text-primary underline"
+              >
+                {videoUrl}
+              </a>
+            </div>
           </div>
         )}
         <div className="flex flex-wrap gap-2">
