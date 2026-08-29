@@ -15,12 +15,9 @@ import {
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import type { AdScript } from "@/lib/script.functions";
-import {
-  CAPTION_FONTS,
-  HIGHLIGHT_COLORS,
-  renderAdVideo,
-  type CaptionStyle,
-} from "@/lib/render-video";
+import { CAPTION_FONTS, HIGHLIGHT_COLORS, type CaptionStyle } from "@/lib/render-video";
+import { SHOTSTACK_STATUS_LABEL, type ShotstackRenderStatus } from "@/lib/shotstack";
+import { getShotstackRender, submitShotstackRender } from "@/lib/shotstack.functions";
 import type { TimelineStage } from "@/lib/timeline";
 
 export const GENERATION_STEPS = [
@@ -55,8 +52,9 @@ export function ScriptStudio({
     uppercase: true,
   });
   const [captions, setCaptions] = useState<Record<number, string>>({});
+  const [backgrounds, setBackgrounds] = useState<Record<number, string>>({});
   const [rendering, setRendering] = useState(false);
-  const [renderPct, setRenderPct] = useState(0);
+  const [renderStatus, setRenderStatus] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -130,27 +128,68 @@ export function ScriptStudio({
 
   async function makeVideo() {
     setRendering(true);
-    setRenderPct(0);
+    setVideoUrl(null);
+    setRenderStatus("Submitting render job to Shotstack…");
     onStage?.("captions", `${style.fontFamily.split(",")[0]} · ${style.fontSize}px`);
-    try {
-      const blob = await renderAdVideo({
-        scenes,
-        style,
+
+    const submitted = await submitShotstackRender({
+      data: {
+        title: script!.title,
+        businessName,
+        cta: script!.cta,
         durationSeconds,
         watermark: !isPaid,
-        businessName,
-        onProgress: (p) => setRenderPct(Math.round(p * 100)),
-      });
-      const url = URL.createObjectURL(blob);
-      setVideoUrl(url);
-      onStage?.("render", `${durationSeconds}s vertical 9:16`);
-      toast.success(isPaid ? "Video ready — watermark-free" : "Video ready (free plan watermark)");
-    } catch {
-      onStage?.("render", "Browser blocked rendering");
-      toast.error("Your browser blocked video rendering. Try Chrome on desktop or Android.");
-    } finally {
+        generateVoiceover: true,
+        style,
+        scenes: scenes.map((s, i) => ({
+          label: s.label,
+          caption: s.onScreenText,
+          voiceover: s.voiceover,
+          ...(backgrounds[i]?.trim() ? { backgroundUrl: backgrounds[i]!.trim() } : {}),
+        })),
+      },
+    }).catch(() => ({ ok: false as const, error: "Could not reach the render service." }));
+
+    if (!submitted.ok || !("id" in submitted) || !submitted.id) {
       setRendering(false);
+      setRenderStatus(null);
+      onStage?.("render", submitted.error ?? "Shotstack submission failed");
+      toast.error(submitted.error ?? "Shotstack submission failed");
+      return;
     }
+
+    const renderId = submitted.id;
+    onStage?.("voiceover", "Voiceover synthesised for cloud render");
+
+    for (let attempt = 0; attempt < 90; attempt++) {
+      await new Promise((r) => setTimeout(r, 4000));
+      let status: ShotstackRenderStatus;
+      try {
+        status = await getShotstackRender({ data: { id: renderId } });
+      } catch {
+        continue;
+      }
+      setRenderStatus(SHOTSTACK_STATUS_LABEL[status.status] ?? "Rendering…");
+      if (status.status === "done" && status.url) {
+        setVideoUrl(status.url);
+        setRendering(false);
+        setRenderStatus(null);
+        onStage?.("render", `${durationSeconds}s 1080×1920 MP4 rendered on Shotstack`);
+        toast.success(isPaid ? "MP4 ready — watermark-free" : "MP4 ready (free plan watermark)");
+        return;
+      }
+      if (status.status === "failed") {
+        setRendering(false);
+        setRenderStatus(null);
+        onStage?.("render", status.error ?? "Shotstack render failed");
+        toast.error(status.error ?? "Shotstack render failed");
+        return;
+      }
+    }
+
+    setRendering(false);
+    setRenderStatus(null);
+    toast.error("Render is taking longer than expected — try again in a moment.");
   }
 
   function downloadVideo() {
@@ -158,6 +197,8 @@ export function ScriptStudio({
     const a = document.createElement("a");
     a.href = videoUrl;
     a.download = `${businessName || "spotlightmaker"}-ad-9x16.mp4`;
+    a.target = "_blank";
+    a.rel = "noreferrer";
     a.click();
     onStage?.("export", "MP4 downloaded");
   }
@@ -211,6 +252,14 @@ export function ScriptStudio({
                 <Input
                   value={scene.onScreenText}
                   onChange={(e) => setCaptions((c) => ({ ...c, [i]: e.target.value }))}
+                />
+              </div>
+              <div className="mt-3 space-y-1">
+                <Label className="text-xs">Background image/video URL (optional)</Label>
+                <Input
+                  placeholder="https://…/clip.mp4 or image.jpg"
+                  value={backgrounds[i] ?? ""}
+                  onChange={(e) => setBackgrounds((b) => ({ ...b, [i]: e.target.value }))}
                 />
               </div>
             </div>
@@ -297,17 +346,24 @@ export function ScriptStudio({
             {isPaid ? "No watermark" : "Watermarked (free plan)"}
           </Badge>
         </div>
-        <Button onClick={() => void makeVideo()} disabled={rendering} className="bg-brand text-primary-foreground">
+        <Button
+          onClick={() => void makeVideo()}
+          disabled={rendering}
+          className="bg-brand text-primary-foreground"
+        >
           {rendering ? (
             <>
-              <Loader2 className="mr-1 size-4 animate-spin" /> Assembling {renderPct}%
+              <Loader2 className="mr-1 size-4 animate-spin" /> Rendering in the cloud…
             </>
           ) : (
             <>
-              <Film className="mr-1 size-4" /> Render vertical ad
+              <Film className="mr-1 size-4" /> Render MP4 with Shotstack
             </>
           )}
         </Button>
+        {rendering && renderStatus && (
+          <p className="text-xs text-muted-foreground">{renderStatus}</p>
+        )}
         {videoUrl && (
           <div className="space-y-3">
             <video
@@ -317,8 +373,19 @@ export function ScriptStudio({
               className="mx-auto aspect-[9/16] w-full max-w-[260px] rounded-xl border border-border"
             />
             <Button variant="outline" onClick={downloadVideo} className="w-full">
-              <Download className="mr-1 size-4" /> Download for mobile
+              <Download className="mr-1 size-4" /> Download MP4
             </Button>
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-xs font-medium">Final video URL</p>
+              <a
+                href={videoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="break-all text-xs text-primary underline"
+              >
+                {videoUrl}
+              </a>
+            </div>
           </div>
         )}
         <div className="flex flex-wrap gap-2">
@@ -331,8 +398,9 @@ export function ScriptStudio({
           ))}
         </div>
         <p className="text-xs text-muted-foreground">
-          Render the video first, then upload the downloaded file to Instagram, TikTok or YouTube —
-          the buttons open each uploader with your caption copied-ready.
+          Your script, styled captions, background visuals and synthesised voiceover are assembled
+          into a 1080×1920 MP4 by Shotstack's cloud renderer. Download it, then upload to Instagram,
+          TikTok or YouTube with the buttons above.
         </p>
       </div>
     </div>
