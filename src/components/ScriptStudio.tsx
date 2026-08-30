@@ -1,11 +1,22 @@
-import { useState } from "react";
-import { Check, Copy, Download, Film, Loader2, Share2 } from "lucide-react";
+import { useRef, useState } from "react";
+import {
+  AlertTriangle,
+  Check,
+  Copy,
+  Download,
+  Film,
+  Loader2,
+  RefreshCw,
+  Share2,
+  Upload,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -16,9 +27,19 @@ import {
 import { Progress } from "@/components/ui/progress";
 import type { AdScript } from "@/lib/script.functions";
 import { CAPTION_FONTS, HIGHLIGHT_COLORS, type CaptionStyle } from "@/lib/render-video";
-import { SHOTSTACK_STATUS_LABEL, type ShotstackRenderStatus } from "@/lib/shotstack";
+import {
+  FPS_OPTIONS,
+  QUALITY_PRESETS,
+  RESOLUTION_PRESETS,
+  SHOTSTACK_STATUS_LABEL,
+  type QualityId,
+  type ResolutionId,
+  type ShotstackRenderStatus,
+} from "@/lib/shotstack";
 import { getShotstackRender, submitShotstackRender } from "@/lib/shotstack.functions";
+import { uploadBackgroundAsset } from "@/lib/upload-asset";
 import type { TimelineStage } from "@/lib/timeline";
+
 
 export const GENERATION_STEPS = [
   "Scriptwriting",
