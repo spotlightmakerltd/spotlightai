@@ -215,6 +215,29 @@ function buildTimeline(input: SubmitInput, voiceoverUrls: Array<string | undefin
       quality: input.quality,
     },
   };
+/** Turns a Shotstack API failure into a message a marketer can act on. */
+function describeSubmitError(status: number, body: string): string {
+  let detail = "";
+  try {
+    const json = JSON.parse(body) as {
+      message?: string;
+      response?: { message?: string; error?: string };
+    };
+    detail = json.response?.message ?? json.response?.error ?? json.message ?? "";
+  } catch {
+    detail = body.slice(0, 200);
+  }
+  if (status === 401 || status === 403) {
+    return "Shotstack rejected the API key. Check that SHOTSTACK_API_KEY is valid for this environment (sandbox vs production).";
+  }
+  if (status === 402) return "Your Shotstack plan is out of render credits.";
+  if (status === 429) return "Shotstack rate limit hit — wait a moment and retry the render.";
+  if (status === 400) {
+    return `Shotstack could not accept this timeline${detail ? `: ${detail}` : ""}. Check that every background URL is publicly reachable.`;
+  }
+  return `Shotstack render failed (${status})${detail ? `: ${detail}` : ""}.`;
+}
+
 
 }
 
