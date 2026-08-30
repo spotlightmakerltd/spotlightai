@@ -24,8 +24,12 @@ const SubmitSchema = z.object({
     textColor: z.string(),
     uppercase: z.boolean(),
   }),
+  resolution: z.enum(["sd", "hd", "fhd"]).default("fhd"),
+  quality: z.enum(["low", "medium", "high"]).default("medium"),
+  fps: z.number().default(30),
   generateVoiceover: z.boolean().default(true),
 });
+
 
 type SubmitInput = z.infer<typeof SubmitSchema>;
 
