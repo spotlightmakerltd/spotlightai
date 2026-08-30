@@ -74,10 +74,17 @@ export function ScriptStudio({
   });
   const [captions, setCaptions] = useState<Record<number, string>>({});
   const [backgrounds, setBackgrounds] = useState<Record<number, string>>({});
+  const [uploading, setUploading] = useState<number | null>(null);
+  const fileInputs = useRef<Record<number, HTMLInputElement | null>>({});
+  const [resolution, setResolution] = useState<ResolutionId>("fhd");
+  const [quality, setQuality] = useState<QualityId>("medium");
+  const [fps, setFps] = useState<number>(30);
   const [rendering, setRendering] = useState(false);
   const [renderStatus, setRenderStatus] = useState<string | null>(null);
+  const [renderError, setRenderError] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
 
   const scenes =
     script?.scenes.map((s, i) => ({ ...s, onScreenText: captions[i] ?? s.onScreenText })) ?? [];
