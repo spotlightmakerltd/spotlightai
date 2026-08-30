@@ -253,8 +253,9 @@ export const submitShotstackRender = createServerFn({ method: "POST" })
     const text = await res.text();
     if (!res.ok) {
       console.error("Shotstack render submit failed", res.status, text);
-      return { ok: false, error: `Shotstack rejected the render (${res.status}).` };
+      return { ok: false, error: describeSubmitError(res.status, text) };
     }
+
     const json = JSON.parse(text) as { response?: { id?: string } };
     if (!json.response?.id) return { ok: false, error: "Shotstack did not return a render id." };
     return { ok: true, id: json.response.id };
