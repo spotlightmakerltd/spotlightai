@@ -24,8 +24,12 @@ const SubmitSchema = z.object({
     textColor: z.string(),
     uppercase: z.boolean(),
   }),
+  resolution: z.enum(["sd", "hd", "fhd"]).default("fhd"),
+  quality: z.enum(["low", "medium", "high"]).default("medium"),
+  fps: z.number().default(30),
   generateVoiceover: z.boolean().default(true),
 });
+
 
 type SubmitInput = z.infer<typeof SubmitSchema>;
 
@@ -72,8 +76,20 @@ async function synthesizeVoiceover(key: string, text: string): Promise<string | 
   return undefined;
 }
 
+const SIZES = {
+  sd: { width: 540, height: 960 },
+  hd: { width: 720, height: 1280 },
+  fhd: { width: 1080, height: 1920 },
+} as const;
+
+function isVideoUrl(url: string) {
+  return /\.(mp4|mov|webm|m4v)(\?|$)/i.test(url);
+}
+
 function buildTimeline(input: SubmitInput, voiceoverUrls: Array<string | undefined>) {
   const per = input.durationSeconds / input.scenes.length;
+  const size = SIZES[input.resolution];
+  const scale = size.width / 1080;
   const background: Array<Record<string, unknown>> = [];
   const captionTrack: Array<Record<string, unknown>> = [];
   const labelTrack: Array<Record<string, unknown>> = [];
@@ -86,21 +102,25 @@ function buildTimeline(input: SubmitInput, voiceoverUrls: Array<string | undefin
     background.push(
       scene.backgroundUrl
         ? {
-            asset: { type: "image", src: scene.backgroundUrl },
+            asset: isVideoUrl(scene.backgroundUrl)
+              ? { type: "video", src: scene.backgroundUrl, volume: 0 }
+              : { type: "image", src: scene.backgroundUrl },
             start,
             length,
             fit: "cover",
             scale: 1,
-            effect: i % 2 === 0 ? "zoomIn" : "slideLeft",
+            ...(isVideoUrl(scene.backgroundUrl)
+              ? {}
+              : { effect: i % 2 === 0 ? "zoomIn" : "slideLeft" }),
             transition: { in: "fade", out: "fade" },
           }
         : {
             asset: {
               type: "html",
-              width: 1080,
-              height: 1920,
+              width: size.width,
+              height: size.height,
               html: `<div></div>`,
-              css: `div { width:1080px; height:1920px; background: linear-gradient(160deg, #0f0b23 0%, ${input.style.highlight} 100%); }`,
+              css: `div { width:${size.width}px; height:${size.height}px; background: linear-gradient(160deg, #0f0b23 0%, ${input.style.highlight} 100%); }`,
             },
             start,
             length,
@@ -109,14 +129,17 @@ function buildTimeline(input: SubmitInput, voiceoverUrls: Array<string | undefin
           },
     );
 
+
+
     const caption = input.style.uppercase ? scene.caption.toUpperCase() : scene.caption;
     captionTrack.push({
       asset: {
         type: "html",
-        width: 900,
-        height: 500,
+        width: Math.round(900 * scale),
+        height: Math.round(500 * scale),
         html: `<div class="cap">${escapeHtml(caption)}</div>`,
-        css: `.cap { font-family: '${input.style.fontFamily.replace(/'/g, "").split(",")[0]}', sans-serif; font-size: ${Math.round(input.style.fontSize * 2)}px; font-weight: 700; color: ${input.style.textColor}; background-color: ${input.style.highlight}; padding: 18px 28px; text-align: center; line-height: 1.2; }`,
+        css: `.cap { font-family: '${input.style.fontFamily.replace(/'/g, "").split(",")[0]}', sans-serif; font-size: ${Math.round(input.style.fontSize * 2 * scale)}px; font-weight: 700; color: ${input.style.textColor}; background-color: ${input.style.highlight}; padding: ${Math.round(18 * scale)}px ${Math.round(28 * scale)}px; text-align: center; line-height: 1.2; }`,
+
         position: "center",
       },
       start,
@@ -185,9 +208,38 @@ function buildTimeline(input: SubmitInput, voiceoverUrls: Array<string | undefin
 
   return {
     timeline: { background: "#0f0b23", tracks },
-    output: { format: "mp4", size: { width: 1080, height: 1920 }, fps: 30 },
+    output: {
+      format: "mp4",
+      size: { width: size.width, height: size.height },
+      fps: input.fps,
+      quality: input.quality,
+    },
   };
 }
+
+/** Turns a Shotstack API failure into a message a marketer can act on. */
+function describeSubmitError(status: number, body: string): string {
+  let detail = "";
+  try {
+    const json = JSON.parse(body) as {
+      message?: string;
+      response?: { message?: string; error?: string };
+    };
+    detail = json.response?.message ?? json.response?.error ?? json.message ?? "";
+  } catch {
+    detail = body.slice(0, 200);
+  }
+  if (status === 401 || status === 403) {
+    return "Shotstack rejected the API key. Check that SHOTSTACK_API_KEY is valid for this environment (sandbox vs production).";
+  }
+  if (status === 402) return "Your Shotstack plan is out of render credits.";
+  if (status === 429) return "Shotstack rate limit hit — wait a moment and retry the render.";
+  if (status === 400) {
+    return `Shotstack could not accept this timeline${detail ? `: ${detail}` : ""}. Check that every background URL is publicly reachable.`;
+  }
+  return `Shotstack render failed (${status})${detail ? `: ${detail}` : ""}.`;
+}
+
 
 function escapeHtml(value: string) {
   return value.replace(
@@ -224,8 +276,9 @@ export const submitShotstackRender = createServerFn({ method: "POST" })
     const text = await res.text();
     if (!res.ok) {
       console.error("Shotstack render submit failed", res.status, text);
-      return { ok: false, error: `Shotstack rejected the render (${res.status}).` };
+      return { ok: false, error: describeSubmitError(res.status, text) };
     }
+
     const json = JSON.parse(text) as { response?: { id?: string } };
     if (!json.response?.id) return { ok: false, error: "Shotstack did not return a render id." };
     return { ok: true, id: json.response.id };

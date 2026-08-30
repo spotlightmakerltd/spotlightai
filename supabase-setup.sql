@@ -158,3 +158,27 @@ alter table public.credit_purchases enable row level security;
 drop policy if exists "own purchases select" on public.credit_purchases;
 create policy "own purchases select" on public.credit_purchases
   for select to authenticated using (auth.uid() = user_id);
+
+-- 7. PUBLIC ASSET STORAGE (background images/videos) -----------------------
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('ad-assets', 'ad-assets', true, 52428800)
+on conflict (id) do update set public = true, file_size_limit = 52428800;
+
+drop policy if exists "ad assets public read" on storage.objects;
+create policy "ad assets public read" on storage.objects
+  for select to anon, authenticated using (bucket_id = 'ad-assets');
+
+drop policy if exists "ad assets own upload" on storage.objects;
+create policy "ad assets own upload" on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'ad-assets' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists "ad assets own update" on storage.objects;
+create policy "ad assets own update" on storage.objects
+  for update to authenticated
+  using (bucket_id = 'ad-assets' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists "ad assets own delete" on storage.objects;
+create policy "ad assets own delete" on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'ad-assets' and (storage.foldername(name))[1] = auth.uid()::text);

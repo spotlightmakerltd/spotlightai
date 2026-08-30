@@ -1,11 +1,22 @@
-import { useState } from "react";
-import { Check, Copy, Download, Film, Loader2, Share2 } from "lucide-react";
+import { useRef, useState } from "react";
+import {
+  AlertTriangle,
+  Check,
+  Copy,
+  Download,
+  Film,
+  Loader2,
+  RefreshCw,
+  Share2,
+  Upload,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -16,9 +27,19 @@ import {
 import { Progress } from "@/components/ui/progress";
 import type { AdScript } from "@/lib/script.functions";
 import { CAPTION_FONTS, HIGHLIGHT_COLORS, type CaptionStyle } from "@/lib/render-video";
-import { SHOTSTACK_STATUS_LABEL, type ShotstackRenderStatus } from "@/lib/shotstack";
+import {
+  FPS_OPTIONS,
+  QUALITY_PRESETS,
+  RESOLUTION_PRESETS,
+  SHOTSTACK_STATUS_LABEL,
+  type QualityId,
+  type ResolutionId,
+  type ShotstackRenderStatus,
+} from "@/lib/shotstack";
 import { getShotstackRender, submitShotstackRender } from "@/lib/shotstack.functions";
+import { uploadBackgroundAsset } from "@/lib/upload-asset";
 import type { TimelineStage } from "@/lib/timeline";
+
 
 export const GENERATION_STEPS = [
   "Scriptwriting",
@@ -53,10 +74,17 @@ export function ScriptStudio({
   });
   const [captions, setCaptions] = useState<Record<number, string>>({});
   const [backgrounds, setBackgrounds] = useState<Record<number, string>>({});
+  const [uploading, setUploading] = useState<number | null>(null);
+  const fileInputs = useRef<Record<number, HTMLInputElement | null>>({});
+  const [resolution, setResolution] = useState<ResolutionId>("fhd");
+  const [quality, setQuality] = useState<QualityId>("medium");
+  const [fps, setFps] = useState<number>(30);
   const [rendering, setRendering] = useState(false);
   const [renderStatus, setRenderStatus] = useState<string | null>(null);
+  const [renderError, setRenderError] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
 
   const scenes =
     script?.scenes.map((s, i) => ({ ...s, onScreenText: captions[i] ?? s.onScreenText })) ?? [];
@@ -126,9 +154,31 @@ export function ScriptStudio({
     triggerDownload(blob, `${businessName || "spotlightmaker"}-script.txt`);
   }
 
+  async function handleUpload(index: number, file: File) {
+    setUploading(index);
+    const result = await uploadBackgroundAsset(file);
+    setUploading(null);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    setBackgrounds((b) => ({ ...b, [index]: result.url }));
+    toast.success("Background uploaded and hosted publicly");
+  }
+
+  function failRender(message: string) {
+    setRendering(false);
+    setRenderStatus(null);
+    setRenderError(message);
+    onStage?.("render", message);
+    toast.error(message);
+  }
+
   async function makeVideo() {
+    const preset = RESOLUTION_PRESETS.find((r) => r.id === resolution)!;
     setRendering(true);
     setVideoUrl(null);
+    setRenderError(null);
     setRenderStatus("Submitting render job to Shotstack…");
     onStage?.("captions", `${style.fontFamily.split(",")[0]} · ${style.fontSize}px`);
 
@@ -141,6 +191,9 @@ export function ScriptStudio({
         watermark: !isPaid,
         generateVoiceover: true,
         style,
+        resolution,
+        quality,
+        fps,
         scenes: scenes.map((s, i) => ({
           label: s.label,
           caption: s.onScreenText,
@@ -148,25 +201,32 @@ export function ScriptStudio({
           ...(backgrounds[i]?.trim() ? { backgroundUrl: backgrounds[i]!.trim() } : {}),
         })),
       },
-    }).catch(() => ({ ok: false as const, error: "Could not reach the render service." }));
+    }).catch(() => ({
+      ok: false as const,
+      error: "Could not reach the render service. Check your connection and retry.",
+    }));
 
     if (!submitted.ok || !("id" in submitted) || !submitted.id) {
-      setRendering(false);
-      setRenderStatus(null);
-      onStage?.("render", submitted.error ?? "Shotstack submission failed");
-      toast.error(submitted.error ?? "Shotstack submission failed");
+      failRender(submitted.error ?? "Shotstack submission failed.");
       return;
     }
 
     const renderId = submitted.id;
     onStage?.("voiceover", "Voiceover synthesised for cloud render");
 
+    let consecutiveFailures = 0;
     for (let attempt = 0; attempt < 90; attempt++) {
       await new Promise((r) => setTimeout(r, 4000));
       let status: ShotstackRenderStatus;
       try {
         status = await getShotstackRender({ data: { id: renderId } });
+        consecutiveFailures = 0;
       } catch {
+        consecutiveFailures++;
+        if (consecutiveFailures >= 5) {
+          failRender("Lost contact with the render service while checking progress.");
+          return;
+        }
         continue;
       }
       setRenderStatus(SHOTSTACK_STATUS_LABEL[status.status] ?? "Rendering…");
@@ -174,23 +234,26 @@ export function ScriptStudio({
         setVideoUrl(status.url);
         setRendering(false);
         setRenderStatus(null);
-        onStage?.("render", `${durationSeconds}s 1080×1920 MP4 rendered on Shotstack`);
+        onStage?.(
+          "render",
+          `${durationSeconds}s ${preset.width}×${preset.height} ${quality} MP4 rendered on Shotstack`,
+        );
         toast.success(isPaid ? "MP4 ready — watermark-free" : "MP4 ready (free plan watermark)");
         return;
       }
       if (status.status === "failed") {
-        setRendering(false);
-        setRenderStatus(null);
-        onStage?.("render", status.error ?? "Shotstack render failed");
-        toast.error(status.error ?? "Shotstack render failed");
+        failRender(
+          status.error
+            ? `Shotstack render failed: ${status.error}`
+            : "Shotstack render failed. Check that all background URLs are public and try again.",
+        );
         return;
       }
     }
 
-    setRendering(false);
-    setRenderStatus(null);
-    toast.error("Render is taking longer than expected — try again in a moment.");
+    failRender("Render timed out after 6 minutes. Try a lower resolution or quality and retry.");
   }
+
 
   function downloadVideo() {
     if (!videoUrl) return;
@@ -254,14 +317,47 @@ export function ScriptStudio({
                   onChange={(e) => setCaptions((c) => ({ ...c, [i]: e.target.value }))}
                 />
               </div>
-              <div className="mt-3 space-y-1">
-                <Label className="text-xs">Background image/video URL (optional)</Label>
-                <Input
-                  placeholder="https://…/clip.mp4 or image.jpg"
-                  value={backgrounds[i] ?? ""}
-                  onChange={(e) => setBackgrounds((b) => ({ ...b, [i]: e.target.value }))}
-                />
+              <div className="mt-3 space-y-2">
+                <Label className="text-xs">Background image/video</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Paste a public URL or upload a file"
+                    value={backgrounds[i] ?? ""}
+                    onChange={(e) => setBackgrounds((b) => ({ ...b, [i]: e.target.value }))}
+                  />
+                  <input
+                    ref={(el) => {
+                      fileInputs.current[i] = el;
+                    }}
+                    type="file"
+                    accept="image/*,video/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (file) void handleUpload(i, file);
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={uploading === i}
+                    onClick={() => fileInputs.current[i]?.click()}
+                  >
+                    {uploading === i ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Upload className="size-4" />
+                    )}
+                    <span className="ml-1 hidden sm:inline">Upload</span>
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Uploads are hosted publicly in your Supabase Storage bucket so Shotstack can fetch
+                  them. Max 50MB.
+                </p>
               </div>
+
             </div>
           ))}
         </div>
@@ -320,23 +416,66 @@ export function ScriptStudio({
             ))}
           </div>
         </div>
-        <div
-          className="flex min-h-28 items-center justify-center rounded-xl p-4"
-          style={{ backgroundColor: "#101024" }}
-        >
-          <span
-            style={{
-              fontFamily: style.fontFamily,
-              fontSize: style.fontSize,
-              backgroundColor: style.highlight,
-              color: style.textColor,
-              textTransform: style.uppercase ? "uppercase" : "none",
-            }}
-            className="rounded px-3 py-1 font-bold"
-          >
-            {scenes[0]?.onScreenText ?? "Caption preview"}
-          </span>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label className="text-xs">Caption text colour</Label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                aria-label="Caption text colour"
+                value={style.textColor}
+                onChange={(e) => setStyle((s) => ({ ...s, textColor: e.target.value }))}
+                className="size-9 cursor-pointer rounded-md border border-border bg-transparent"
+              />
+              <span className="text-xs text-muted-foreground">{style.textColor}</span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-border p-3">
+            <Label className="text-xs">Uppercase captions</Label>
+            <Switch
+              checked={style.uppercase}
+              onCheckedChange={(v) => setStyle((s) => ({ ...s, uppercase: v }))}
+            />
+          </div>
         </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs">9:16 preview — verify before rendering</Label>
+          <div
+            className="relative mx-auto flex aspect-[9/16] w-full max-w-[240px] items-center justify-center overflow-hidden rounded-2xl border border-border p-4"
+            style={{
+              background: backgrounds[0]?.trim()
+                ? undefined
+                : `linear-gradient(160deg, #0f0b23 0%, ${style.highlight} 100%)`,
+            }}
+          >
+            {backgrounds[0]?.trim() && (
+              <img
+                src={backgrounds[0]}
+                alt="Scene 1 background preview"
+                className="absolute inset-0 size-full object-cover"
+              />
+            )}
+            <span
+              style={{
+                fontFamily: style.fontFamily,
+                fontSize: Math.round(style.fontSize * 0.55),
+                backgroundColor: style.highlight,
+                color: style.textColor,
+                textTransform: style.uppercase ? "uppercase" : "none",
+              }}
+              className="relative rounded px-2 py-1 text-center font-bold"
+            >
+              {scenes[0]?.onScreenText ?? "Caption preview"}
+            </span>
+            {!isPaid && (
+              <span className="absolute bottom-3 text-[9px] font-semibold tracking-widest text-white/70">
+                SPOTLIGHTMAKER — FREE PLAN
+              </span>
+            )}
+          </div>
+        </div>
+
       </div>
 
       <div className="card-soft space-y-4 p-6">
@@ -346,6 +485,54 @@ export function ScriptStudio({
             {isPaid ? "No watermark" : "Watermarked (free plan)"}
           </Badge>
         </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="space-y-2">
+            <Label className="text-xs">Resolution (9:16)</Label>
+            <Select value={resolution} onValueChange={(v) => setResolution(v as ResolutionId)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {RESOLUTION_PRESETS.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs">Output quality</Label>
+            <Select value={quality} onValueChange={(v) => setQuality(v as QualityId)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {QUALITY_PRESETS.map((q) => (
+                  <SelectItem key={q.id} value={q.id}>
+                    {q.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs">Frame rate</Label>
+            <Select value={String(fps)} onValueChange={(v) => setFps(Number(v))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {FPS_OPTIONS.map((f) => (
+                  <SelectItem key={f} value={String(f)}>
+                    {f} fps
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <Button
           onClick={() => void makeVideo()}
           disabled={rendering}
@@ -364,6 +551,21 @@ export function ScriptStudio({
         {rendering && renderStatus && (
           <p className="text-xs text-muted-foreground">{renderStatus}</p>
         )}
+        {renderError && !rendering && (
+          <div className="space-y-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4">
+            <div className="flex gap-2">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+              <div>
+                <p className="text-sm font-semibold text-destructive">Render failed</p>
+                <p className="mt-1 text-xs text-muted-foreground">{renderError}</p>
+              </div>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => void makeVideo()}>
+              <RefreshCw className="mr-1 size-3.5" /> Retry render
+            </Button>
+          </div>
+        )}
+
         {videoUrl && (
           <div className="space-y-3">
             <video
