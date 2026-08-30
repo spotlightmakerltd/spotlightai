@@ -485,6 +485,54 @@ export function ScriptStudio({
             {isPaid ? "No watermark" : "Watermarked (free plan)"}
           </Badge>
         </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="space-y-2">
+            <Label className="text-xs">Resolution (9:16)</Label>
+            <Select value={resolution} onValueChange={(v) => setResolution(v as ResolutionId)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {RESOLUTION_PRESETS.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs">Output quality</Label>
+            <Select value={quality} onValueChange={(v) => setQuality(v as QualityId)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {QUALITY_PRESETS.map((q) => (
+                  <SelectItem key={q.id} value={q.id}>
+                    {q.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs">Frame rate</Label>
+            <Select value={String(fps)} onValueChange={(v) => setFps(Number(v))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {FPS_OPTIONS.map((f) => (
+                  <SelectItem key={f} value={String(f)}>
+                    {f} fps
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <Button
           onClick={() => void makeVideo()}
           disabled={rendering}
@@ -503,6 +551,21 @@ export function ScriptStudio({
         {rendering && renderStatus && (
           <p className="text-xs text-muted-foreground">{renderStatus}</p>
         )}
+        {renderError && !rendering && (
+          <div className="space-y-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4">
+            <div className="flex gap-2">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+              <div>
+                <p className="text-sm font-semibold text-destructive">Render failed</p>
+                <p className="mt-1 text-xs text-muted-foreground">{renderError}</p>
+              </div>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => void makeVideo()}>
+              <RefreshCw className="mr-1 size-3.5" /> Retry render
+            </Button>
+          </div>
+        )}
+
         {videoUrl && (
           <div className="space-y-3">
             <video
