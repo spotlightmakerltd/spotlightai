@@ -317,14 +317,47 @@ export function ScriptStudio({
                   onChange={(e) => setCaptions((c) => ({ ...c, [i]: e.target.value }))}
                 />
               </div>
-              <div className="mt-3 space-y-1">
-                <Label className="text-xs">Background image/video URL (optional)</Label>
-                <Input
-                  placeholder="https://…/clip.mp4 or image.jpg"
-                  value={backgrounds[i] ?? ""}
-                  onChange={(e) => setBackgrounds((b) => ({ ...b, [i]: e.target.value }))}
-                />
+              <div className="mt-3 space-y-2">
+                <Label className="text-xs">Background image/video</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Paste a public URL or upload a file"
+                    value={backgrounds[i] ?? ""}
+                    onChange={(e) => setBackgrounds((b) => ({ ...b, [i]: e.target.value }))}
+                  />
+                  <input
+                    ref={(el) => {
+                      fileInputs.current[i] = el;
+                    }}
+                    type="file"
+                    accept="image/*,video/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (file) void handleUpload(i, file);
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={uploading === i}
+                    onClick={() => fileInputs.current[i]?.click()}
+                  >
+                    {uploading === i ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Upload className="size-4" />
+                    )}
+                    <span className="ml-1 hidden sm:inline">Upload</span>
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Uploads are hosted publicly in your Supabase Storage bucket so Shotstack can fetch
+                  them. Max 50MB.
+                </p>
               </div>
+
             </div>
           ))}
         </div>
