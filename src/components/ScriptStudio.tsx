@@ -154,9 +154,31 @@ export function ScriptStudio({
     triggerDownload(blob, `${businessName || "spotlightmaker"}-script.txt`);
   }
 
+  async function handleUpload(index: number, file: File) {
+    setUploading(index);
+    const result = await uploadBackgroundAsset(file);
+    setUploading(null);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    setBackgrounds((b) => ({ ...b, [index]: result.url }));
+    toast.success("Background uploaded and hosted publicly");
+  }
+
+  function failRender(message: string) {
+    setRendering(false);
+    setRenderStatus(null);
+    setRenderError(message);
+    onStage?.("render", message);
+    toast.error(message);
+  }
+
   async function makeVideo() {
+    const preset = RESOLUTION_PRESETS.find((r) => r.id === resolution)!;
     setRendering(true);
     setVideoUrl(null);
+    setRenderError(null);
     setRenderStatus("Submitting render job to Shotstack…");
     onStage?.("captions", `${style.fontFamily.split(",")[0]} · ${style.fontSize}px`);
 
@@ -169,6 +191,9 @@ export function ScriptStudio({
         watermark: !isPaid,
         generateVoiceover: true,
         style,
+        resolution,
+        quality,
+        fps,
         scenes: scenes.map((s, i) => ({
           label: s.label,
           caption: s.onScreenText,
@@ -176,25 +201,32 @@ export function ScriptStudio({
           ...(backgrounds[i]?.trim() ? { backgroundUrl: backgrounds[i]!.trim() } : {}),
         })),
       },
-    }).catch(() => ({ ok: false as const, error: "Could not reach the render service." }));
+    }).catch(() => ({
+      ok: false as const,
+      error: "Could not reach the render service. Check your connection and retry.",
+    }));
 
     if (!submitted.ok || !("id" in submitted) || !submitted.id) {
-      setRendering(false);
-      setRenderStatus(null);
-      onStage?.("render", submitted.error ?? "Shotstack submission failed");
-      toast.error(submitted.error ?? "Shotstack submission failed");
+      failRender(submitted.error ?? "Shotstack submission failed.");
       return;
     }
 
     const renderId = submitted.id;
     onStage?.("voiceover", "Voiceover synthesised for cloud render");
 
+    let consecutiveFailures = 0;
     for (let attempt = 0; attempt < 90; attempt++) {
       await new Promise((r) => setTimeout(r, 4000));
       let status: ShotstackRenderStatus;
       try {
         status = await getShotstackRender({ data: { id: renderId } });
+        consecutiveFailures = 0;
       } catch {
+        consecutiveFailures++;
+        if (consecutiveFailures >= 5) {
+          failRender("Lost contact with the render service while checking progress.");
+          return;
+        }
         continue;
       }
       setRenderStatus(SHOTSTACK_STATUS_LABEL[status.status] ?? "Rendering…");
@@ -202,23 +234,26 @@ export function ScriptStudio({
         setVideoUrl(status.url);
         setRendering(false);
         setRenderStatus(null);
-        onStage?.("render", `${durationSeconds}s 1080×1920 MP4 rendered on Shotstack`);
+        onStage?.(
+          "render",
+          `${durationSeconds}s ${preset.width}×${preset.height} ${quality} MP4 rendered on Shotstack`,
+        );
         toast.success(isPaid ? "MP4 ready — watermark-free" : "MP4 ready (free plan watermark)");
         return;
       }
       if (status.status === "failed") {
-        setRendering(false);
-        setRenderStatus(null);
-        onStage?.("render", status.error ?? "Shotstack render failed");
-        toast.error(status.error ?? "Shotstack render failed");
+        failRender(
+          status.error
+            ? `Shotstack render failed: ${status.error}`
+            : "Shotstack render failed. Check that all background URLs are public and try again.",
+        );
         return;
       }
     }
 
-    setRendering(false);
-    setRenderStatus(null);
-    toast.error("Render is taking longer than expected — try again in a moment.");
+    failRender("Render timed out after 6 minutes. Try a lower resolution or quality and retry.");
   }
+
 
   function downloadVideo() {
     if (!videoUrl) return;
