@@ -215,6 +215,8 @@ function buildTimeline(input: SubmitInput, voiceoverUrls: Array<string | undefin
       quality: input.quality,
     },
   };
+}
+
 /** Turns a Shotstack API failure into a message a marketer can act on. */
 function describeSubmitError(status: number, body: string): string {
   let detail = "";
@@ -238,8 +240,6 @@ function describeSubmitError(status: number, body: string): string {
   return `Shotstack render failed (${status})${detail ? `: ${detail}` : ""}.`;
 }
 
-
-}
 
 function escapeHtml(value: string) {
   return value.replace(
