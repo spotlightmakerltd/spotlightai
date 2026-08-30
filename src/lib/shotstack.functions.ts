@@ -76,8 +76,20 @@ async function synthesizeVoiceover(key: string, text: string): Promise<string | 
   return undefined;
 }
 
+const SIZES = {
+  sd: { width: 540, height: 960 },
+  hd: { width: 720, height: 1280 },
+  fhd: { width: 1080, height: 1920 },
+} as const;
+
+function isVideoUrl(url: string) {
+  return /\.(mp4|mov|webm|m4v)(\?|$)/i.test(url);
+}
+
 function buildTimeline(input: SubmitInput, voiceoverUrls: Array<string | undefined>) {
   const per = input.durationSeconds / input.scenes.length;
+  const size = SIZES[input.resolution];
+  const scale = size.width / 1080;
   const background: Array<Record<string, unknown>> = [];
   const captionTrack: Array<Record<string, unknown>> = [];
   const labelTrack: Array<Record<string, unknown>> = [];
@@ -90,21 +102,25 @@ function buildTimeline(input: SubmitInput, voiceoverUrls: Array<string | undefin
     background.push(
       scene.backgroundUrl
         ? {
-            asset: { type: "image", src: scene.backgroundUrl },
+            asset: isVideoUrl(scene.backgroundUrl)
+              ? { type: "video", src: scene.backgroundUrl, volume: 0 }
+              : { type: "image", src: scene.backgroundUrl },
             start,
             length,
             fit: "cover",
             scale: 1,
-            effect: i % 2 === 0 ? "zoomIn" : "slideLeft",
+            ...(isVideoUrl(scene.backgroundUrl)
+              ? {}
+              : { effect: i % 2 === 0 ? "zoomIn" : "slideLeft" }),
             transition: { in: "fade", out: "fade" },
           }
         : {
             asset: {
               type: "html",
-              width: 1080,
-              height: 1920,
+              width: size.width,
+              height: size.height,
               html: `<div></div>`,
-              css: `div { width:1080px; height:1920px; background: linear-gradient(160deg, #0f0b23 0%, ${input.style.highlight} 100%); }`,
+              css: `div { width:${size.width}px; height:${size.height}px; background: linear-gradient(160deg, #0f0b23 0%, ${input.style.highlight} 100%); }`,
             },
             start,
             length,
@@ -112,6 +128,8 @@ function buildTimeline(input: SubmitInput, voiceoverUrls: Array<string | undefin
             transition: { in: "fade", out: "fade" },
           },
     );
+
+
 
     const caption = input.style.uppercase ? scene.caption.toUpperCase() : scene.caption;
     captionTrack.push({
