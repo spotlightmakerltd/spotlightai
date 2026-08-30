@@ -416,23 +416,66 @@ export function ScriptStudio({
             ))}
           </div>
         </div>
-        <div
-          className="flex min-h-28 items-center justify-center rounded-xl p-4"
-          style={{ backgroundColor: "#101024" }}
-        >
-          <span
-            style={{
-              fontFamily: style.fontFamily,
-              fontSize: style.fontSize,
-              backgroundColor: style.highlight,
-              color: style.textColor,
-              textTransform: style.uppercase ? "uppercase" : "none",
-            }}
-            className="rounded px-3 py-1 font-bold"
-          >
-            {scenes[0]?.onScreenText ?? "Caption preview"}
-          </span>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label className="text-xs">Caption text colour</Label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                aria-label="Caption text colour"
+                value={style.textColor}
+                onChange={(e) => setStyle((s) => ({ ...s, textColor: e.target.value }))}
+                className="size-9 cursor-pointer rounded-md border border-border bg-transparent"
+              />
+              <span className="text-xs text-muted-foreground">{style.textColor}</span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-border p-3">
+            <Label className="text-xs">Uppercase captions</Label>
+            <Switch
+              checked={style.uppercase}
+              onCheckedChange={(v) => setStyle((s) => ({ ...s, uppercase: v }))}
+            />
+          </div>
         </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs">9:16 preview — verify before rendering</Label>
+          <div
+            className="relative mx-auto flex aspect-[9/16] w-full max-w-[240px] items-center justify-center overflow-hidden rounded-2xl border border-border p-4"
+            style={{
+              background: backgrounds[0]?.trim()
+                ? undefined
+                : `linear-gradient(160deg, #0f0b23 0%, ${style.highlight} 100%)`,
+            }}
+          >
+            {backgrounds[0]?.trim() && (
+              <img
+                src={backgrounds[0]}
+                alt="Scene 1 background preview"
+                className="absolute inset-0 size-full object-cover"
+              />
+            )}
+            <span
+              style={{
+                fontFamily: style.fontFamily,
+                fontSize: Math.round(style.fontSize * 0.55),
+                backgroundColor: style.highlight,
+                color: style.textColor,
+                textTransform: style.uppercase ? "uppercase" : "none",
+              }}
+              className="relative rounded px-2 py-1 text-center font-bold"
+            >
+              {scenes[0]?.onScreenText ?? "Caption preview"}
+            </span>
+            {!isPaid && (
+              <span className="absolute bottom-3 text-[9px] font-semibold tracking-widest text-white/70">
+                SPOTLIGHTMAKER — FREE PLAN
+              </span>
+            )}
+          </div>
+        </div>
+
       </div>
 
       <div className="card-soft space-y-4 p-6">
