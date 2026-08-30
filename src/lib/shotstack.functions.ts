@@ -135,10 +135,11 @@ function buildTimeline(input: SubmitInput, voiceoverUrls: Array<string | undefin
     captionTrack.push({
       asset: {
         type: "html",
-        width: 900,
-        height: 500,
+        width: Math.round(900 * scale),
+        height: Math.round(500 * scale),
         html: `<div class="cap">${escapeHtml(caption)}</div>`,
-        css: `.cap { font-family: '${input.style.fontFamily.replace(/'/g, "").split(",")[0]}', sans-serif; font-size: ${Math.round(input.style.fontSize * 2)}px; font-weight: 700; color: ${input.style.textColor}; background-color: ${input.style.highlight}; padding: 18px 28px; text-align: center; line-height: 1.2; }`,
+        css: `.cap { font-family: '${input.style.fontFamily.replace(/'/g, "").split(",")[0]}', sans-serif; font-size: ${Math.round(input.style.fontSize * 2 * scale)}px; font-weight: 700; color: ${input.style.textColor}; background-color: ${input.style.highlight}; padding: ${Math.round(18 * scale)}px ${Math.round(28 * scale)}px; text-align: center; line-height: 1.2; }`,
+
         position: "center",
       },
       start,
