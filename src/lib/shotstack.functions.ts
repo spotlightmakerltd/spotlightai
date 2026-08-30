@@ -208,8 +208,14 @@ function buildTimeline(input: SubmitInput, voiceoverUrls: Array<string | undefin
 
   return {
     timeline: { background: "#0f0b23", tracks },
-    output: { format: "mp4", size: { width: 1080, height: 1920 }, fps: 30 },
+    output: {
+      format: "mp4",
+      size: { width: size.width, height: size.height },
+      fps: input.fps,
+      quality: input.quality,
+    },
   };
+
 }
 
 function escapeHtml(value: string) {
