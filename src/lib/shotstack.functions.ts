@@ -121,7 +121,7 @@ async function ingestToShotstack(key: string, bytes: Uint8Array, mime: string) {
  */
 async function autoVisualForScene(
   shotstackKey: string,
-  scene: { label: string; caption: string; voiceover: string; visual?: string },
+  scene: { label: string; caption: string; voiceover: string; visual?: string | undefined },
   context: { businessName: string; title: string },
 ): Promise<string | undefined> {
   const aiKey = process.env["LOVABLE_API_KEY"];
