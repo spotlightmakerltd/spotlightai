@@ -6,6 +6,7 @@ const SceneSchema = z.object({
   label: z.string(),
   caption: z.string(),
   voiceover: z.string(),
+  visual: z.string().optional(),
   backgroundUrl: z.string().url().optional(),
   voiceoverUrl: z.string().url().optional(),
 });
@@ -172,7 +173,11 @@ function isVideoUrl(url: string) {
   return /\.(mp4|mov|webm|m4v)(\?|$)/i.test(url);
 }
 
-function buildTimeline(input: SubmitInput, voiceoverUrls: Array<string | undefined>) {
+function buildTimeline(
+  input: SubmitInput,
+  voiceoverUrls: Array<string | undefined>,
+  autoBackgrounds: Array<string | undefined>,
+) {
   const per = input.durationSeconds / input.scenes.length;
   const size = SIZES[input.resolution];
   const scale = size.width / 1080;
@@ -181,7 +186,8 @@ function buildTimeline(input: SubmitInput, voiceoverUrls: Array<string | undefin
   const labelTrack: Array<Record<string, unknown>> = [];
   const audioTrack: Array<Record<string, unknown>> = [];
 
-  input.scenes.forEach((scene, i) => {
+  input.scenes.forEach((rawScene, i) => {
+    const scene = { ...rawScene, backgroundUrl: rawScene.backgroundUrl ?? autoBackgrounds[i] };
     const start = Number((i * per).toFixed(2));
     const length = Number(per.toFixed(2));
 
@@ -353,7 +359,15 @@ export const submitShotstackRender = createServerFn({ method: "POST" })
       );
     }
 
-    const payload = buildTimeline(data, voiceoverUrls);
+    const autoBackgrounds = await Promise.all(
+      data.scenes.map((s) =>
+        s.backgroundUrl
+          ? Promise.resolve(undefined)
+          : autoVisualForScene(key, s, { businessName: data.businessName, title: data.title }),
+      ),
+    );
+
+    const payload = buildTimeline(data, voiceoverUrls, autoBackgrounds);
     const res = await fetch(`${EDIT_BASE}/render`, {
       method: "POST",
       headers: headers(key),
