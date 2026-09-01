@@ -95,12 +95,23 @@ function Dashboard() {
     void loadHistory();
   }, [loadHistory]);
 
+  // Merge stored events with any optimistic ones so live progress is never wiped out.
   const loadEvents = useCallback(async (generationId: string | null) => {
     if (!generationId) {
       setEvents([]);
       return;
     }
-    setEvents(await fetchGenerationEvents(generationId));
+    const stored = await fetchGenerationEvents(generationId);
+    setEvents((prev) => {
+      const byStage = new Map<string, GenerationEvent>();
+      for (const e of [...stored, ...prev.filter((p) => p.generation_id === generationId)]) {
+        const existing = byStage.get(e.stage);
+        if (!existing || new Date(e.created_at) >= new Date(existing.created_at)) {
+          byStage.set(e.stage, e);
+        }
+      }
+      return [...byStage.values()].sort((a, b) => a.created_at.localeCompare(b.created_at));
+    });
   }, []);
 
   useEffect(() => {
