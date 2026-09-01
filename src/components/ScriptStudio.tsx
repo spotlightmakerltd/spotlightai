@@ -63,7 +63,11 @@ export function ScriptStudio({
   businessName: string;
   durationSeconds: number;
   isPaid: boolean;
-  onStage?: (stage: TimelineStage, detail?: string) => void;
+  onStage?: (
+    stage: TimelineStage,
+    detail?: string,
+    status?: "completed" | "failed" | "running",
+  ) => void;
 }) {
   const [style, setStyle] = useState<CaptionStyle>({
     fontFamily: CAPTION_FONTS[0]!.id,
@@ -170,7 +174,7 @@ export function ScriptStudio({
     setRendering(false);
     setRenderStatus(null);
     setRenderError(message);
-    onStage?.("render", message);
+    onStage?.("render", message, "failed");
     toast.error(message);
   }
 
@@ -181,6 +185,8 @@ export function ScriptStudio({
     setRenderError(null);
     setRenderStatus("Submitting render job to Shotstack…");
     onStage?.("captions", `${style.fontFamily.split(",")[0]} · ${style.fontSize}px`);
+    onStage?.("voiceover", "Synthesising voiceover…", "running");
+    onStage?.("render", "Submitting render job to Shotstack…", "running");
 
     const submitted = await submitShotstackRender({
       data: {
@@ -198,6 +204,7 @@ export function ScriptStudio({
           label: s.label,
           caption: s.onScreenText,
           voiceover: s.voiceover,
+          visual: s.visual,
           ...(backgrounds[i]?.trim() ? { backgroundUrl: backgrounds[i]!.trim() } : {}),
         })),
       },
@@ -212,7 +219,8 @@ export function ScriptStudio({
     }
 
     const renderId = submitted.id;
-    onStage?.("voiceover", "Voiceover synthesised for cloud render");
+    onStage?.("voiceover", "Voiceover synthesised for cloud render", "completed");
+    onStage?.("render", "Rendering in the Shotstack cloud…", "running");
 
     let consecutiveFailures = 0;
     for (let attempt = 0; attempt < 90; attempt++) {
@@ -229,7 +237,11 @@ export function ScriptStudio({
         }
         continue;
       }
-      setRenderStatus(SHOTSTACK_STATUS_LABEL[status.status] ?? "Rendering…");
+      const label = SHOTSTACK_STATUS_LABEL[status.status] ?? "Rendering…";
+      setRenderStatus(label);
+      if (status.status !== "done" && status.status !== "failed") {
+        onStage?.("render", label, "running");
+      }
       if (status.status === "done" && status.url) {
         setVideoUrl(status.url);
         setRendering(false);
@@ -237,6 +249,7 @@ export function ScriptStudio({
         onStage?.(
           "render",
           `${durationSeconds}s ${preset.width}×${preset.height} ${quality} MP4 rendered on Shotstack`,
+          "completed",
         );
         toast.success(isPaid ? "MP4 ready — watermark-free" : "MP4 ready (free plan watermark)");
         return;
@@ -263,7 +276,7 @@ export function ScriptStudio({
     a.target = "_blank";
     a.rel = "noreferrer";
     a.click();
-    onStage?.("export", "MP4 downloaded");
+    onStage?.("export", "MP4 downloaded", "completed");
   }
 
   const shareText = `${script.hookLine} ${script.cta} ${script.hashtags.join(" ")}`;
@@ -353,8 +366,8 @@ export function ScriptStudio({
                   </Button>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Uploads are hosted publicly in your Supabase Storage bucket so Shotstack can fetch
-                  them. Max 50MB.
+                  Leave blank and we auto-generate a cinematic visual from this scene's direction.
+                  Uploads are hosted publicly so Shotstack can fetch them. Max 50MB.
                 </p>
               </div>
 

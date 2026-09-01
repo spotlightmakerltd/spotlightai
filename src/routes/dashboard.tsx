@@ -95,12 +95,23 @@ function Dashboard() {
     void loadHistory();
   }, [loadHistory]);
 
+  // Merge stored events with any optimistic ones so live progress is never wiped out.
   const loadEvents = useCallback(async (generationId: string | null) => {
     if (!generationId) {
       setEvents([]);
       return;
     }
-    setEvents(await fetchGenerationEvents(generationId));
+    const stored = await fetchGenerationEvents(generationId);
+    setEvents((prev) => {
+      const byStage = new Map<string, GenerationEvent>();
+      for (const e of [...stored, ...prev.filter((p) => p.generation_id === generationId)]) {
+        const existing = byStage.get(e.stage);
+        if (!existing || new Date(e.created_at) >= new Date(existing.created_at)) {
+          byStage.set(e.stage, e);
+        }
+      }
+      return [...byStage.values()].sort((a, b) => a.created_at.localeCompare(b.created_at));
+    });
   }, []);
 
   useEffect(() => {
@@ -137,13 +148,32 @@ function Dashboard() {
     })();
   }, [session, refreshProfile]);
 
+  // Optimistically paint the timeline, then persist the event in the background.
   const recordStage = useCallback(
-    async (stage: TimelineStage, detail?: string) => {
-      if (!user || !activeId) return;
-      await logGenerationEvent({ generationId: activeId, userId: user.id, stage, detail });
-      await loadEvents(activeId);
+    (
+      stage: TimelineStage,
+      detail?: string,
+      status: "completed" | "failed" | "running" = "completed",
+      generationId?: string,
+    ) => {
+      const target = generationId ?? activeId;
+      if (!user || !target) return;
+      setEvents((prev) => {
+        const next = prev.filter((e) => e.stage !== stage);
+        next.push({
+          id: `local-${stage}-${Date.now()}`,
+          generation_id: target,
+          user_id: user.id,
+          stage,
+          status,
+          detail: detail ?? null,
+          created_at: new Date().toISOString(),
+        });
+        return next;
+      });
+      void logGenerationEvent({ generationId: target, userId: user.id, stage, status, detail });
     },
-    [user, activeId, loadEvents],
+    [user, activeId],
   );
 
   async function handleGenerate(values: AdFormValues, cost: number) {
@@ -194,6 +224,11 @@ function Dashboard() {
     }
     void refreshProfile();
 
+    const generationId = (row as VideoGeneration).id;
+    setActiveId(generationId);
+    setEvents([]);
+    recordStage("script", "Writing your hook, body and outro…", "running", generationId);
+
     const timers = GENERATION_STEPS.map((_, i) =>
       setTimeout(() => setStep(i), i * 900),
     );
@@ -215,30 +250,11 @@ function Dashboard() {
         .update({ status: "completed", script: result })
         .eq("id", (row as VideoGeneration).id);
       setScript(result);
-      setActiveId((row as VideoGeneration).id);
-      await logGenerationEvent({
-        generationId: (row as VideoGeneration).id,
-        userId: user.id,
-        stage: "script",
-        detail: `${result.scenes.length} scenes`,
-      });
-      await logGenerationEvent({
-        generationId: (row as VideoGeneration).id,
-        userId: user.id,
-        stage: "voiceover",
-        detail: `${values.durationSeconds}s voice track`,
-      });
-      await loadEvents((row as VideoGeneration).id);
+      recordStage("script", `${result.scenes.length} scenes`, "completed", generationId);
       toast.success("Ad script ready");
     } catch {
       timers.forEach(clearTimeout);
-      await logGenerationEvent({
-        generationId: (row as VideoGeneration).id,
-        userId: user.id,
-        stage: "script",
-        status: "failed",
-        detail: "Script generation failed",
-      });
+      recordStage("script", "Script generation failed", "failed", generationId);
       await supabase
         .from("video_generations")
         .update({ status: "failed" })
@@ -302,7 +318,7 @@ function Dashboard() {
               businessName={meta.businessName}
               durationSeconds={meta.durationSeconds}
               isPaid={(profile?.subscription_tier ?? "free") !== "free"}
-              onStage={(stage, detail) => void recordStage(stage, detail)}
+              onStage={(stage, detail, status) => recordStage(stage, detail, status)}
             />
             {activeId && (
               <div className="mt-6">

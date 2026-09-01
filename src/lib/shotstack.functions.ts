@@ -6,6 +6,7 @@ const SceneSchema = z.object({
   label: z.string(),
   caption: z.string(),
   voiceover: z.string(),
+  visual: z.string().optional(),
   backgroundUrl: z.string().url().optional(),
   voiceoverUrl: z.string().url().optional(),
 });
@@ -76,6 +77,92 @@ async function synthesizeVoiceover(key: string, text: string): Promise<string | 
   return undefined;
 }
 
+const INGEST_BASE = "https://api.shotstack.io/ingest/v1";
+
+/** Uploads raw bytes to Shotstack's hosted CDN and returns the public source URL. */
+async function ingestToShotstack(key: string, bytes: Uint8Array, mime: string) {
+  const create = await fetch(`${INGEST_BASE}/upload`, { method: "POST", headers: headers(key) });
+  if (!create.ok) {
+    console.error("Shotstack ingest upload request failed", create.status, await create.text());
+    return undefined;
+  }
+  const json = (await create.json()) as { data?: { id?: string; attributes?: { id?: string; url?: string } } };
+  const putUrl = json.data?.attributes?.url;
+  const id = json.data?.attributes?.id ?? json.data?.id;
+  if (!putUrl || !id) return undefined;
+
+  const put = await fetch(putUrl, {
+    method: "PUT",
+    body: bytes as unknown as BodyInit,
+    headers: { "Content-Type": mime },
+  });
+  if (!put.ok) {
+    console.error("Shotstack signed upload failed", put.status);
+    return undefined;
+  }
+
+  for (let i = 0; i < 30; i++) {
+    await new Promise((r) => setTimeout(r, 2000));
+    const poll = await fetch(`${INGEST_BASE}/sources/${id}`, { headers: headers(key) });
+    if (!poll.ok) continue;
+    const data = (await poll.json()) as {
+      data?: { attributes?: { status?: string; source?: string } };
+    };
+    const status = data.data?.attributes?.status;
+    if (status === "ready") return data.data?.attributes?.source;
+    if (status === "failed" || status === "overwriting") return undefined;
+  }
+  return undefined;
+}
+
+/**
+ * Generates a cinematic vertical background for a scene from its visual direction
+ * so blank background fields never render as a flat/black screen.
+ */
+async function autoVisualForScene(
+  shotstackKey: string,
+  scene: { label: string; caption: string; voiceover: string; visual?: string | undefined },
+  context: { businessName: string; title: string },
+): Promise<string | undefined> {
+  const aiKey = process.env["LOVABLE_API_KEY"];
+  if (!aiKey) return undefined;
+  try {
+    const prompt = `Ultra high quality cinematic vertical 9:16 advertising background photo for a short-form social video ad.
+Brand: ${context.businessName}. Campaign: ${context.title}.
+Scene (${scene.label}) visual direction: ${scene.visual || scene.caption}.
+Style: photoreal, rich colour grading, shallow depth of field, dramatic lighting, plenty of clean negative space in the middle for caption text.
+Absolutely no text, no words, no logos, no watermarks, no UI overlays.`;
+
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${aiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image",
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+      }),
+    });
+    if (!res.ok) {
+      console.error("Auto visual generation failed", res.status, await res.text());
+      return undefined;
+    }
+    const json = (await res.json()) as {
+      choices?: Array<{ message?: { images?: Array<{ image_url?: { url?: string } }> } }>;
+    };
+    const dataUrl = json.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    if (!dataUrl || !dataUrl.includes(";base64,")) return undefined;
+    const [meta, b64] = dataUrl.split(";base64,");
+    const mime = meta?.replace("data:", "") || "image/png";
+    const binary = atob(b64!);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return await ingestToShotstack(shotstackKey, bytes, mime);
+  } catch (err) {
+    console.error("Auto visual error", err);
+    return undefined;
+  }
+}
+
 const SIZES = {
   sd: { width: 540, height: 960 },
   hd: { width: 720, height: 1280 },
@@ -86,7 +173,11 @@ function isVideoUrl(url: string) {
   return /\.(mp4|mov|webm|m4v)(\?|$)/i.test(url);
 }
 
-function buildTimeline(input: SubmitInput, voiceoverUrls: Array<string | undefined>) {
+function buildTimeline(
+  input: SubmitInput,
+  voiceoverUrls: Array<string | undefined>,
+  autoBackgrounds: Array<string | undefined>,
+) {
   const per = input.durationSeconds / input.scenes.length;
   const size = SIZES[input.resolution];
   const scale = size.width / 1080;
@@ -95,7 +186,8 @@ function buildTimeline(input: SubmitInput, voiceoverUrls: Array<string | undefin
   const labelTrack: Array<Record<string, unknown>> = [];
   const audioTrack: Array<Record<string, unknown>> = [];
 
-  input.scenes.forEach((scene, i) => {
+  input.scenes.forEach((rawScene, i) => {
+    const scene = { ...rawScene, backgroundUrl: rawScene.backgroundUrl ?? autoBackgrounds[i] };
     const start = Number((i * per).toFixed(2));
     const length = Number(per.toFixed(2));
 
@@ -267,7 +359,15 @@ export const submitShotstackRender = createServerFn({ method: "POST" })
       );
     }
 
-    const payload = buildTimeline(data, voiceoverUrls);
+    const autoBackgrounds = await Promise.all(
+      data.scenes.map((s) =>
+        s.backgroundUrl
+          ? Promise.resolve(undefined)
+          : autoVisualForScene(key, s, { businessName: data.businessName, title: data.title }),
+      ),
+    );
+
+    const payload = buildTimeline(data, voiceoverUrls, autoBackgrounds);
     const res = await fetch(`${EDIT_BASE}/render`, {
       method: "POST",
       headers: headers(key),
