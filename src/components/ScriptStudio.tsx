@@ -204,6 +204,7 @@ export function ScriptStudio({
           label: s.label,
           caption: s.onScreenText,
           voiceover: s.voiceover,
+          visual: s.visual,
           ...(backgrounds[i]?.trim() ? { backgroundUrl: backgrounds[i]!.trim() } : {}),
         })),
       },
@@ -365,8 +366,8 @@ export function ScriptStudio({
                   </Button>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Uploads are hosted publicly in your Supabase Storage bucket so Shotstack can fetch
-                  them. Max 50MB.
+                  Leave blank and we auto-generate a cinematic visual from this scene's direction.
+                  Uploads are hosted publicly so Shotstack can fetch them. Max 50MB.
                 </p>
               </div>
 
