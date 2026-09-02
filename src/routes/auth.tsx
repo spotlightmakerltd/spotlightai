@@ -13,16 +13,16 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Sign in — SpotlightMaker AI Ad Studio" },
+      { title: "Sign in — SpotlightMaker Ad Studio" },
       {
         name: "description",
         content:
-          "Create a free SpotlightMaker account and get 5 credits to generate AI short-form video ad scripts.",
+          "Create a free SpotlightMaker account and get 5 credits to launch your first high-converting video ad.",
       },
       { property: "og:title", content: "Sign in — SpotlightMaker" },
       {
         property: "og:description",
-        content: "Sign up free and generate AI short-form video ads in seconds.",
+        content: "Sign up free and launch video ads that bring in customers.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
