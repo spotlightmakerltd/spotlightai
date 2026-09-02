@@ -49,7 +49,7 @@ function Dashboard() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState(0);
-  const [meta, setMeta] = useState({ businessName: "", durationSeconds: 30 });
+  const [meta, setMeta] = useState({ businessName: "", durationSeconds: 30, imageUrl: "" });
   const [events, setEvents] = useState<GenerationEvent[]>([]);
   const [issues, setIssues] = useState<SetupIssue[] | null>(null);
   const [checking, setChecking] = useState(false);
@@ -181,9 +181,13 @@ function Dashboard() {
     setBusy(true);
     setStep(0);
     setScript(null);
-    setMeta({ businessName: values.businessName, durationSeconds: values.durationSeconds });
+    setMeta({
+      businessName: values.businessName,
+      durationSeconds: values.durationSeconds,
+      imageUrl: values.imageUrl,
+    });
 
-    const prompt = `${values.businessName} | ${values.niche} | ${values.campaignGoal} | ${values.targetAudience} | ${values.durationSeconds}s`;
+    const prompt = `${values.mode} | ${values.businessName} | ${values.niche} | ${values.campaignGoal} | ${values.targetAudience} | ${values.durationSeconds}s`;
 
     const { data: row, error: insertError } = await supabase
       .from("video_generations")
@@ -227,7 +231,7 @@ function Dashboard() {
     const generationId = (row as VideoGeneration).id;
     setActiveId(generationId);
     setEvents([]);
-    recordStage("script", "Writing your hook, body and outro…", "running", generationId);
+    recordStage("script", "Writing your hook, story and offer…", "running", generationId);
 
     const timers = GENERATION_STEPS.map((_, i) =>
       setTimeout(() => setStep(i), i * 900),
@@ -251,7 +255,7 @@ function Dashboard() {
         .eq("id", (row as VideoGeneration).id);
       setScript(result);
       recordStage("script", `${result.scenes.length} scenes`, "completed", generationId);
-      toast.success("Ad script ready");
+      toast.success("Your ad copy is ready");
     } catch {
       timers.forEach(clearTimeout);
       recordStage("script", "Script generation failed", "failed", generationId);
@@ -259,7 +263,7 @@ function Dashboard() {
         .from("video_generations")
         .update({ status: "failed" })
         .eq("id", (row as VideoGeneration).id);
-      toast.error("Generation failed. Your credits were used for the attempt — contact support.");
+      toast.error("We could not finish this ad. Your credits were used for the attempt — contact support.");
     } finally {
       setBusy(false);
       void loadHistory();
@@ -269,7 +273,7 @@ function Dashboard() {
   if (loading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        Loading your studio…
+        Opening your studio…
       </div>
     );
   }
@@ -287,7 +291,7 @@ function Dashboard() {
     <div className="min-h-screen">
       <AppNavbar />
       <main className="surface-glow mx-auto max-w-[1600px] px-4 py-6 sm:px-6">
-        <h1 className="sr-only">SpotlightMaker dashboard</h1>
+        <h1 className="sr-only">SpotlightMaker ad studio</h1>
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] xl:grid-cols-[280px_minmax(0,1fr)_minmax(0,1.1fr)]">
           <div className="order-3 xl:order-1">
             <HistoryPanel
@@ -299,6 +303,7 @@ function Dashboard() {
                 setMeta({
                   businessName: item.business_name,
                   durationSeconds: item.duration_seconds,
+                  imageUrl: "",
                 });
               }}
             />
@@ -318,6 +323,7 @@ function Dashboard() {
               step={step}
               businessName={meta.businessName}
               durationSeconds={meta.durationSeconds}
+              productImageUrl={meta.imageUrl}
               isPaid={(profile?.subscription_tier ?? "free") !== "free"}
               onStage={(stage, detail, status) => recordStage(stage, detail, status)}
             />
