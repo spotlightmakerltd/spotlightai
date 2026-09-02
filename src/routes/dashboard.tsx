@@ -23,16 +23,16 @@ export const Route = createFileRoute("/dashboard")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Dashboard — SpotlightMaker Ad Studio" },
+      { title: "Ad Studio — SpotlightMaker" },
       {
         name: "description",
         content:
-          "Generate, style and export AI short-form video ad scripts with hook, body and outro scenes.",
+          "Create scroll-stopping video ads that win customers: hook, story and offer, styled captions and a ready-to-post 9:16 video.",
       },
-      { property: "og:title", content: "SpotlightMaker Dashboard" },
+      { property: "og:title", content: "SpotlightMaker Ad Studio" },
       {
         property: "og:description",
-        content: "Your AI ad studio: scripts, captions and 9:16 exports.",
+        content: "Turn your business or product into a video ad customers act on.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -308,6 +308,7 @@ function Dashboard() {
               onSubmit={handleGenerate}
               busy={busy}
               credits={Number(profile?.credits ?? 0)}
+              userId={user.id}
             />
           </div>
           <div className="order-2 xl:order-3">
