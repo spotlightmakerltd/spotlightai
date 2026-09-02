@@ -79,17 +79,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SpotlightMaker — AI Short-Form Video Ad Generator" },
+      { title: "SpotlightMaker — Video Ads That Win Customers" },
       {
         name: "description",
         content:
-          "Generate AI-powered short-form video ad scripts, hooks and 9:16 production layouts for your business.",
+          "Create high-converting short-form video ads for your business or product and turn views into customers.",
       },
       { name: "author", content: "SpotlightMaker" },
       { property: "og:title", content: "SpotlightMaker" },
       {
         property: "og:description",
-        content: "AI-powered short-form video ad scripts, hooks and vertical production layouts.",
+        content: "High-converting short-form video ads for your business or product.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

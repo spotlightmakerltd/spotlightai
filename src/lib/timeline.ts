@@ -1,11 +1,11 @@
 import { supabase } from "@/lib/supabase";
 
 export const TIMELINE_STAGES = [
-  { id: "script", label: "Script written" },
-  { id: "voiceover", label: "Voiceover generated" },
+  { id: "script", label: "Ad copy written" },
+  { id: "voiceover", label: "Voice track recorded" },
   { id: "captions", label: "Captions styled" },
-  { id: "render", label: "Video rendered" },
-  { id: "export", label: "Exported / downloaded" },
+  { id: "render", label: "Video produced" },
+  { id: "export", label: "Ready to publish" },
 ] as const;
 
 export type TimelineStage = (typeof TIMELINE_STAGES)[number]["id"];

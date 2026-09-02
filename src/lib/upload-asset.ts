@@ -31,7 +31,7 @@ export async function uploadBackgroundAsset(file: File): Promise<UploadResult> {
       ok: false,
       error:
         error.message.toLowerCase().includes("bucket")
-          ? `Storage bucket "${ASSET_BUCKET}" is missing — run the setup SQL in Supabase.`
+          ? `Storage bucket "${ASSET_BUCKET}" is not ready yet — run the setup script for your workspace.`
           : `Upload failed: ${error.message}`,
     };
   }
