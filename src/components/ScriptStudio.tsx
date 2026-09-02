@@ -42,10 +42,10 @@ import type { TimelineStage } from "@/lib/timeline";
 
 
 export const GENERATION_STEPS = [
-  "Scriptwriting",
-  "Voiceover generation",
-  "Caption styling",
-  "Media assembly",
+  "Writing your ad copy",
+  "Recording the voice track",
+  "Styling your captions",
+  "Assembling your video",
 ] as const;
 
 export function ScriptStudio({
@@ -55,6 +55,7 @@ export function ScriptStudio({
   businessName,
   durationSeconds,
   isPaid,
+  productImageUrl,
   onStage,
 }: {
   script: AdScript | null;
@@ -63,6 +64,7 @@ export function ScriptStudio({
   businessName: string;
   durationSeconds: number;
   isPaid: boolean;
+  productImageUrl?: string;
   onStage?: (
     stage: TimelineStage,
     detail?: string,
@@ -98,7 +100,7 @@ export function ScriptStudio({
       <div className="card-soft flex flex-col gap-6 p-8">
         <div className="flex items-center gap-3">
           <Loader2 className="size-5 animate-spin text-primary" />
-          <h2 className="text-lg font-semibold">Compiling Ad Script…</h2>
+          <h2 className="text-lg font-semibold">Building your ad…</h2>
         </div>
         <Progress value={((step + 1) / GENERATION_STEPS.length) * 100} />
         <ul className="space-y-3">
@@ -125,10 +127,10 @@ export function ScriptStudio({
         <span className="bg-brand flex size-12 items-center justify-center rounded-2xl text-primary-foreground">
           <Film className="size-5" />
         </span>
-        <h2 className="text-lg font-semibold">Your ad preview lands here</h2>
+        <h2 className="text-xl font-bold tracking-tight">Your next best-selling ad lands here</h2>
         <p className="max-w-sm text-sm text-muted-foreground">
-          Fill in the brief on the left and we'll write a hook-body-outro script, style your
-          captions and assemble a vertical 9:16 ad.
+          Fill in the brief on the left. You get a hook, story and offer, styled captions and a
+          ready-to-post vertical video your customers actually watch.
         </p>
       </div>
     );
@@ -167,7 +169,7 @@ export function ScriptStudio({
       return;
     }
     setBackgrounds((b) => ({ ...b, [index]: result.url }));
-    toast.success("Background uploaded and hosted publicly");
+    toast.success("Visual added to this scene");
   }
 
   function failRender(message: string) {
@@ -183,10 +185,10 @@ export function ScriptStudio({
     setRendering(true);
     setVideoUrl(null);
     setRenderError(null);
-    setRenderStatus("Submitting render job to Shotstack…");
+    setRenderStatus("Sending your ad into production…");
     onStage?.("captions", `${style.fontFamily.split(",")[0]} · ${style.fontSize}px`);
-    onStage?.("voiceover", "Synthesising voiceover…", "running");
-    onStage?.("render", "Submitting render job to Shotstack…", "running");
+    onStage?.("voiceover", "Recording your voice track…", "running");
+    onStage?.("render", "Sending your ad into production…", "running");
 
     const submitted = await submitShotstackRender({
       data: {
@@ -205,7 +207,9 @@ export function ScriptStudio({
           caption: s.onScreenText,
           voiceover: s.voiceover,
           visual: s.visual,
-          ...(backgrounds[i]?.trim() ? { backgroundUrl: backgrounds[i]!.trim() } : {}),
+          ...(backgrounds[i]?.trim() || productImageUrl
+            ? { backgroundUrl: (backgrounds[i]?.trim() || productImageUrl)! }
+            : {}),
         })),
       },
     }).catch(() => ({
@@ -214,13 +218,13 @@ export function ScriptStudio({
     }));
 
     if (!submitted.ok || !("id" in submitted) || !submitted.id) {
-      failRender(submitted.error ?? "Shotstack submission failed.");
+      failRender(submitted.error ?? "We could not start production. Please try again.");
       return;
     }
 
     const renderId = submitted.id;
-    onStage?.("voiceover", "Voiceover synthesised for cloud render", "completed");
-    onStage?.("render", "Rendering in the Shotstack cloud…", "running");
+    onStage?.("voiceover", "Voice track recorded", "completed");
+    onStage?.("render", "Producing your video…", "running");
 
     let consecutiveFailures = 0;
     for (let attempt = 0; attempt < 90; attempt++) {
@@ -232,7 +236,7 @@ export function ScriptStudio({
       } catch {
         consecutiveFailures++;
         if (consecutiveFailures >= 5) {
-          failRender("Lost contact with the render service while checking progress.");
+          failRender("We lost contact while producing your video. Please retry.");
           return;
         }
         continue;
@@ -248,23 +252,23 @@ export function ScriptStudio({
         setRenderStatus(null);
         onStage?.(
           "render",
-          `${durationSeconds}s ${preset.width}×${preset.height} ${quality} MP4 rendered on Shotstack`,
+          `${durationSeconds}s ${preset.width}×${preset.height} ${quality} video produced`,
           "completed",
         );
-        toast.success(isPaid ? "MP4 ready — watermark-free" : "MP4 ready (free plan watermark)");
+        toast.success(isPaid ? "Your ad is ready — watermark free" : "Your ad is ready (free plan watermark)");
         return;
       }
       if (status.status === "failed") {
         failRender(
           status.error
-            ? `Shotstack render failed: ${status.error}`
-            : "Shotstack render failed. Check that all background URLs are public and try again.",
+            ? `Production failed: ${status.error}`
+            : "Production failed. Check that any media links you pasted are public and try again.",
         );
         return;
       }
     }
 
-    failRender("Render timed out after 6 minutes. Try a lower resolution or quality and retry.");
+    failRender("Production timed out after 6 minutes. Try a lower resolution or quality and retry.");
   }
 
 
@@ -366,8 +370,8 @@ export function ScriptStudio({
                   </Button>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Leave blank and we auto-generate a cinematic visual from this scene's direction.
-                  Uploads are hosted publicly so Shotstack can fetch them. Max 50MB.
+                  Leave blank and we create a cinematic visual for this scene automatically.
+                  Uploads are hosted securely for production. Max 50MB.
                 </p>
               </div>
 
@@ -382,7 +386,7 @@ export function ScriptStudio({
       </div>
 
       <div className="card-soft space-y-4 p-6">
-        <h3 className="text-sm font-semibold">Caption styling</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Caption styling</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label className="text-xs">Font</Label>
@@ -457,14 +461,14 @@ export function ScriptStudio({
           <div
             className="relative mx-auto flex aspect-[9/16] w-full max-w-[240px] items-center justify-center overflow-hidden rounded-2xl border border-border p-4"
             style={{
-              background: backgrounds[0]?.trim()
+              background: backgrounds[0]?.trim() || productImageUrl
                 ? undefined
                 : `linear-gradient(160deg, #0f0b23 0%, ${style.highlight} 100%)`,
             }}
           >
-            {backgrounds[0]?.trim() && (
+            {(backgrounds[0]?.trim() || productImageUrl) && (
               <img
-                src={backgrounds[0]}
+                src={backgrounds[0]?.trim() || productImageUrl}
                 alt="Scene 1 background preview"
                 className="absolute inset-0 size-full object-cover"
               />
@@ -493,7 +497,7 @@ export function ScriptStudio({
 
       <div className="card-soft space-y-4 p-6">
         <div className="flex items-center justify-between gap-3">
-          <h3 className="text-sm font-semibold">Export 9:16 video</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Publish-ready video</h3>
           <Badge variant={isPaid ? "default" : "secondary"}>
             {isPaid ? "No watermark" : "Watermarked (free plan)"}
           </Badge>
@@ -553,11 +557,11 @@ export function ScriptStudio({
         >
           {rendering ? (
             <>
-              <Loader2 className="mr-1 size-4 animate-spin" /> Rendering in the cloud…
+              <Loader2 className="mr-1 size-4 animate-spin" /> Producing your video…
             </>
           ) : (
             <>
-              <Film className="mr-1 size-4" /> Render MP4 with Shotstack
+              <Film className="mr-1 size-4" /> Produce my video
             </>
           )}
         </Button>
@@ -569,12 +573,12 @@ export function ScriptStudio({
             <div className="flex gap-2">
               <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
               <div>
-                <p className="text-sm font-semibold text-destructive">Render failed</p>
+                <p className="text-sm font-semibold text-destructive">Production failed</p>
                 <p className="mt-1 text-xs text-muted-foreground">{renderError}</p>
               </div>
             </div>
             <Button size="sm" variant="outline" onClick={() => void makeVideo()}>
-              <RefreshCw className="mr-1 size-3.5" /> Retry render
+              <RefreshCw className="mr-1 size-3.5" /> Try again
             </Button>
           </div>
         )}
@@ -613,9 +617,9 @@ export function ScriptStudio({
           ))}
         </div>
         <p className="text-xs text-muted-foreground">
-          Your script, styled captions, background visuals and synthesised voiceover are assembled
-          into a 1080×1920 MP4 by Shotstack's cloud renderer. Download it, then upload to Instagram,
-          TikTok or YouTube with the buttons above.
+          Your copy, captions, visuals and voice track are produced into a crisp vertical video
+          built for reach. Download it and post to Instagram, TikTok, YouTube or WhatsApp to start
+          bringing in customers today.
         </p>
       </div>
     </div>

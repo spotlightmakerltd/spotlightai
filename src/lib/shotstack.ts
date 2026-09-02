@@ -15,12 +15,12 @@ export type ShotstackRenderStatus = {
 };
 
 export const SHOTSTACK_STATUS_LABEL: Record<ShotstackRenderStatus["status"], string> = {
-  queued: "Queued in the render farm",
-  fetching: "Fetching media assets",
-  rendering: "Rendering MP4 in the cloud",
-  saving: "Saving final file",
-  done: "Render complete",
-  failed: "Render failed",
+  queued: "Queued for production",
+  fetching: "Gathering your visuals",
+  rendering: "Producing your video",
+  saving: "Finishing your video",
+  done: "Your ad is ready",
+  failed: "Production failed",
 };
 
 /** Vertical 9:16 output presets. */
