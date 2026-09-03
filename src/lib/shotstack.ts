@@ -41,3 +41,14 @@ export const QUALITY_PRESETS = [
 export type QualityId = (typeof QUALITY_PRESETS)[number]["id"];
 
 export const FPS_OPTIONS = [24, 25, 30] as const;
+
+/** Voice options offered in the studio. */
+export const VOICE_OPTIONS = [
+  { id: "en-NG-EzinneNeural", label: "Nigerian English — Ezinne (female)", group: "Nigerian English" },
+  { id: "en-NG-AbeoNeural", label: "Nigerian English — Abeo (male)", group: "Nigerian English" },
+  { id: "en-US-AriaNeural", label: "US English — Aria (female)", group: "US English" },
+  { id: "en-US-ChristopherNeural", label: "US English — Christopher (male)", group: "US English" },
+] as const;
+
+export type VoiceId = (typeof VOICE_OPTIONS)[number]["id"];
+export const DEFAULT_VOICE: VoiceId = "en-NG-EzinneNeural";

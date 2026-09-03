@@ -32,9 +32,12 @@ import {
   QUALITY_PRESETS,
   RESOLUTION_PRESETS,
   SHOTSTACK_STATUS_LABEL,
+  VOICE_OPTIONS,
+  DEFAULT_VOICE,
   type QualityId,
   type ResolutionId,
   type ShotstackRenderStatus,
+  type VoiceId,
 } from "@/lib/shotstack";
 import { getShotstackRender, submitShotstackRender } from "@/lib/shotstack.functions";
 import { uploadBackgroundAsset } from "@/lib/upload-asset";
@@ -85,6 +88,7 @@ export function ScriptStudio({
   const [resolution, setResolution] = useState<ResolutionId>("fhd");
   const [quality, setQuality] = useState<QualityId>("medium");
   const [fps, setFps] = useState<number>(30);
+  const [voice, setVoice] = useState<VoiceId>(DEFAULT_VOICE);
   const [rendering, setRendering] = useState(false);
   const [renderStatus, setRenderStatus] = useState<string | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
@@ -187,7 +191,11 @@ export function ScriptStudio({
     setRenderError(null);
     setRenderStatus("Sending your ad into production…");
     onStage?.("captions", `${style.fontFamily.split(",")[0]} · ${style.fontSize}px`);
-    onStage?.("voiceover", "Recording your voice track…", "running");
+    onStage?.(
+      "voiceover",
+      `Recording with ${VOICE_OPTIONS.find((v) => v.id === voice)?.label ?? "your chosen voice"}…`,
+      "running",
+    );
     onStage?.("render", "Sending your ad into production…", "running");
 
     const submitted = await submitShotstackRender({
@@ -198,6 +206,7 @@ export function ScriptStudio({
         durationSeconds,
         watermark: !isPaid,
         generateVoiceover: true,
+        voice,
         style,
         resolution,
         quality,
@@ -459,7 +468,7 @@ export function ScriptStudio({
         <div className="space-y-2">
           <Label className="text-xs">9:16 preview — verify before rendering</Label>
           <div
-            className="relative mx-auto flex aspect-[9/16] w-full max-w-[240px] items-center justify-center overflow-hidden rounded-2xl border border-border p-4"
+            className="relative mx-auto flex aspect-[9/16] w-full max-w-[240px] flex-col justify-end overflow-hidden rounded-2xl border border-border p-4 pb-[18%]"
             style={{
               background: backgrounds[0]?.trim() || productImageUrl
                 ? undefined
@@ -481,12 +490,17 @@ export function ScriptStudio({
                 color: style.textColor,
                 textTransform: style.uppercase ? "uppercase" : "none",
               }}
-              className="relative rounded px-2 py-1 text-center font-bold"
+              className="relative mx-auto rounded px-2 py-1 text-center font-bold"
             >
               {scenes[0]?.onScreenText ?? "Caption preview"}
             </span>
+            {scenes[0] && (
+              <span className="absolute left-3 top-3 text-[9px] font-semibold uppercase tracking-widest text-white/70">
+                {scenes[0].label}
+              </span>
+            )}
             {!isPaid && (
-              <span className="absolute bottom-3 text-[9px] font-semibold tracking-widest text-white/70">
+              <span className="absolute right-3 top-3 text-[9px] font-semibold tracking-widest text-white/70">
                 SPOTLIGHTMAKER — FREE PLAN
               </span>
             )}
@@ -528,6 +542,21 @@ export function ScriptStudio({
                 {QUALITY_PRESETS.map((q) => (
                   <SelectItem key={q.id} value={q.id}>
                     {q.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label className="text-xs">Voice</Label>
+            <Select value={voice} onValueChange={(v) => setVoice(v as VoiceId)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {VOICE_OPTIONS.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.label}
                   </SelectItem>
                 ))}
               </SelectContent>
