@@ -9,6 +9,7 @@ import {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase, type Profile } from "@/lib/supabase";
+import { clearForeignDrafts } from "@/lib/drafts";
 
 type AuthState = {
   loading: boolean;
@@ -49,9 +50,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(nextSession);
       if (event === "SIGNED_OUT" || !nextSession?.user) {
         setProfile(null);
+        clearForeignDrafts(null);
         return;
       }
       if (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "USER_UPDATED") {
+        clearForeignDrafts(nextSession.user.id);
         void loadProfile(nextSession.user.id, nextSession.user.email ?? null);
       }
     });
@@ -78,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
+    clearForeignDrafts(null);
     setProfile(null);
     setSession(null);
   }, []);
