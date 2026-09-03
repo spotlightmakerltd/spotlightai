@@ -300,18 +300,30 @@ export function GenerateForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="audience">Target audience</Label>
-        <Input
-          id="audience"
-          value={values.targetAudience}
-          className={field("targetAudience")}
-          onBlur={() => blur("targetAudience")}
-          onChange={(e) => set("targetAudience", e.target.value)}
-          placeholder="Busy professionals aged 28-45"
-        />
-        {errors.targetAudience && (
-          <p className="text-xs text-destructive">{errors.targetAudience}</p>
+        <Label>Target audience</Label>
+        <Select value={values.audience} onValueChange={(v) => set("audience", v)}>
+          <SelectTrigger className={field("audience")}>
+            <SelectValue placeholder="Select your target audience" />
+          </SelectTrigger>
+          <SelectContent className="max-h-72">
+            {AUDIENCES.map((audience) => (
+              <SelectItem key={audience} value={audience}>
+                {audience}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {values.audience === OTHER_AUDIENCE && (
+          <Input
+            autoFocus
+            value={values.audienceOther}
+            className={field("audience")}
+            onBlur={() => blur("audience")}
+            onChange={(e) => set("audienceOther", e.target.value)}
+            placeholder="Type your target audience"
+          />
         )}
+        {errors.audience && <p className="text-xs text-destructive">{errors.audience}</p>}
       </div>
 
       <div className="space-y-2">
