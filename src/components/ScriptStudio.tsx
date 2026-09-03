@@ -93,7 +93,7 @@ export function ScriptStudio({
 
 
   const scenes =
-    script?.scenes.map((s, i) => ({ ...s, onScreenText: captions[i] ?? s.onScreenText })) ?? [];
+    script?.scenes?.map((s, i) => ({ ...s, onScreenText: captions[i] ?? s.onScreenText })) ?? [];
 
   if (busy) {
     return (
@@ -145,7 +145,7 @@ export function ScriptStudio({
     ),
     "",
     `CTA: ${script.cta}`,
-    script.hashtags.join(" "),
+    (script.hashtags ?? []).join(" "),
   ].join("\n\n");
 
   async function copyScript() {
@@ -283,7 +283,7 @@ export function ScriptStudio({
     onStage?.("export", "MP4 downloaded", "completed");
   }
 
-  const shareText = `${script.hookLine} ${script.cta} ${script.hashtags.join(" ")}`;
+  const shareText = `${script.hookLine} ${script.cta} ${(script.hashtags ?? []).join(" ")}`;
   const socials = [
     { label: "WhatsApp", href: `https://wa.me/?text=${encodeURIComponent(shareText)}` },
     {
@@ -381,7 +381,7 @@ export function ScriptStudio({
 
         <div className="rounded-xl border border-border p-4">
           <p className="text-sm font-medium">{script.cta}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{script.hashtags.join(" ")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{(script.hashtags ?? []).join(" ")}</p>
         </div>
       </div>
 
