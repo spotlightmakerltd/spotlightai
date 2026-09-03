@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { CAMPAIGN_GOALS, DURATION_OPTIONS, creditsFor, formatCredits } from "@/lib/pricing";
 import { INDUSTRIES, OTHER_INDUSTRY } from "@/lib/industries";
+import { AUDIENCES, OTHER_AUDIENCE } from "@/lib/audiences";
 import { clearForeignDrafts, draftKey } from "@/lib/drafts";
 import { uploadBackgroundAsset } from "@/lib/upload-asset";
 
@@ -37,7 +38,8 @@ type FormState = {
   productName: string;
   productDetails: string;
   campaignGoal: string;
-  targetAudience: string;
+  audience: string;
+  audienceOther: string;
   durationSeconds: number;
   imageUrl: string;
 };
@@ -50,7 +52,8 @@ const EMPTY: FormState = {
   productName: "",
   productDetails: "",
   campaignGoal: "Drive Sales",
-  targetAudience: "",
+  audience: "",
+  audienceOther: "",
   durationSeconds: 30,
   imageUrl: "",
 };
@@ -59,6 +62,10 @@ type Errors = Partial<Record<keyof FormState, string>>;
 
 function resolvedIndustry(v: FormState): string {
   return v.industry === OTHER_INDUSTRY ? v.industryOther.trim() : v.industry;
+}
+
+function resolvedAudience(v: FormState): string {
+  return v.audience === OTHER_AUDIENCE ? v.audienceOther.trim() : v.audience;
 }
 
 function validate(v: FormState): Errors {
@@ -72,8 +79,7 @@ function validate(v: FormState): Errors {
       errors.productDetails = "Describe the product and its key benefits.";
   }
   if (!v.campaignGoal) errors.campaignGoal = "Pick a campaign goal.";
-  if (v.targetAudience.trim().length < 3)
-    errors.targetAudience = "Describe who should buy from you.";
+  if (resolvedAudience(v).length < 3) errors.audience = "Choose or type your target audience.";
   return errors;
 }
 
@@ -144,7 +150,7 @@ export function GenerateForm({
       productName: true,
       productDetails: true,
       campaignGoal: true,
-      targetAudience: true,
+      audience: true,
     });
     if (Object.keys(found).length > 0) return;
     onSubmit(
@@ -153,7 +159,7 @@ export function GenerateForm({
         businessName: isProduct ? values.productName.trim() : values.businessName.trim(),
         niche: isProduct ? values.productDetails.trim() : resolvedIndustry(values),
         campaignGoal: values.campaignGoal,
-        targetAudience: values.targetAudience.trim(),
+        targetAudience: resolvedAudience(values),
         durationSeconds: values.durationSeconds,
         imageUrl: values.imageUrl,
       },
@@ -294,18 +300,30 @@ export function GenerateForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="audience">Target audience</Label>
-        <Input
-          id="audience"
-          value={values.targetAudience}
-          className={field("targetAudience")}
-          onBlur={() => blur("targetAudience")}
-          onChange={(e) => set("targetAudience", e.target.value)}
-          placeholder="Busy professionals aged 28-45"
-        />
-        {errors.targetAudience && (
-          <p className="text-xs text-destructive">{errors.targetAudience}</p>
+        <Label>Target audience</Label>
+        <Select value={values.audience} onValueChange={(v) => set("audience", v)}>
+          <SelectTrigger className={field("audience")}>
+            <SelectValue placeholder="Select your target audience" />
+          </SelectTrigger>
+          <SelectContent className="max-h-72">
+            {AUDIENCES.map((audience) => (
+              <SelectItem key={audience} value={audience}>
+                {audience}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {values.audience === OTHER_AUDIENCE && (
+          <Input
+            autoFocus
+            value={values.audienceOther}
+            className={field("audience")}
+            onBlur={() => blur("audience")}
+            onChange={(e) => set("audienceOther", e.target.value)}
+            placeholder="Type your target audience"
+          />
         )}
+        {errors.audience && <p className="text-xs text-destructive">{errors.audience}</p>}
       </div>
 
       <div className="space-y-2">
