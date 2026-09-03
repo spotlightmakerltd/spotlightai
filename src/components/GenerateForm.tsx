@@ -64,6 +64,10 @@ function resolvedIndustry(v: FormState): string {
   return v.industry === OTHER_INDUSTRY ? v.industryOther.trim() : v.industry;
 }
 
+function resolvedAudience(v: FormState): string {
+  return v.audience === OTHER_AUDIENCE ? v.audienceOther.trim() : v.audience;
+}
+
 function validate(v: FormState): Errors {
   const errors: Errors = {};
   if (v.mode === "business") {
@@ -75,8 +79,7 @@ function validate(v: FormState): Errors {
       errors.productDetails = "Describe the product and its key benefits.";
   }
   if (!v.campaignGoal) errors.campaignGoal = "Pick a campaign goal.";
-  if (v.targetAudience.trim().length < 3)
-    errors.targetAudience = "Describe who should buy from you.";
+  if (resolvedAudience(v).length < 3) errors.audience = "Choose or type your target audience.";
   return errors;
 }
 
