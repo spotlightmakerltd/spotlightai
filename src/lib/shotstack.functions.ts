@@ -29,6 +29,9 @@ const SubmitSchema = z.object({
   quality: z.enum(["low", "medium", "high"]).default("medium"),
   fps: z.number().default(30),
   generateVoiceover: z.boolean().default(true),
+  voice: z
+    .enum(["en-NG-EzinneNeural", "en-NG-AbeoNeural", "en-US-AriaNeural", "en-US-ChristopherNeural"])
+    .default("en-NG-EzinneNeural"),
 });
 
 
@@ -42,14 +45,18 @@ function headers(key: string) {
 }
 
 /** Generates a Shotstack text-to-speech asset and waits for its hosted URL. */
-async function synthesizeVoiceover(key: string, text: string): Promise<string | undefined> {
+async function synthesizeVoiceover(
+  key: string,
+  text: string,
+  voice: string,
+): Promise<string | undefined> {
   try {
     const res = await fetch(`${CREATE_BASE}/assets`, {
       method: "POST",
       headers: headers(key),
       body: JSON.stringify({
         provider: "shotstack",
-        options: { type: "text-to-speech", text: text.slice(0, 900), voice: "Matthew" },
+        options: { type: "text-to-speech", text: text.slice(0, 900), voice },
       }),
     });
     if (!res.ok) {
@@ -228,15 +235,15 @@ function buildTimeline(
       asset: {
         type: "html",
         width: Math.round(900 * scale),
-        height: Math.round(500 * scale),
-        html: `<div class="cap">${escapeHtml(caption)}</div>`,
-        css: `.cap { font-family: '${input.style.fontFamily.replace(/'/g, "").split(",")[0]}', sans-serif; font-size: ${Math.round(input.style.fontSize * 2 * scale)}px; font-weight: 700; color: ${input.style.textColor}; background-color: ${input.style.highlight}; padding: ${Math.round(18 * scale)}px ${Math.round(28 * scale)}px; text-align: center; line-height: 1.2; }`,
-
-        position: "center",
+        height: Math.round(340 * scale),
+        html: `<div class="wrap"><span class="cap">${escapeHtml(caption)}</span></div>`,
+        css: `.wrap { display:flex; align-items:flex-end; justify-content:center; width:${Math.round(900 * scale)}px; height:${Math.round(340 * scale)}px; } .cap { display:inline-block; font-family: '${input.style.fontFamily.replace(/'/g, "").split(",")[0]}', sans-serif; font-size: ${Math.round(input.style.fontSize * 1.8 * scale)}px; font-weight: 700; color: ${input.style.textColor}; background-color: ${input.style.highlight}; padding: ${Math.round(14 * scale)}px ${Math.round(24 * scale)}px; text-align: center; line-height: 1.15; }`,
+        position: "bottom",
       },
       start,
       length,
-      position: "center",
+      position: "bottom",
+      offset: { x: 0, y: 0.18 },
       transition: { in: "slideUp", out: "fade" },
     });
 
@@ -247,11 +254,12 @@ function buildTimeline(
         style: "minimal",
         size: "x-small",
         color: "#ffffff",
-        position: "top",
+        position: "topLeft",
       },
       start,
       length,
-      opacity: 0.8,
+      offset: { x: 0.04, y: -0.03 },
+      opacity: 0.65,
     });
 
     const vo = scene.voiceoverUrl ?? voiceoverUrls[i];
@@ -268,6 +276,7 @@ function buildTimeline(
         color: "#ffffff",
         position: "bottom",
       },
+      offset: { x: 0, y: 0.05 },
       start: Math.max(0, input.durationSeconds - Math.min(4, input.durationSeconds / 3)),
       length: Math.min(4, input.durationSeconds / 3),
       transition: { in: "fade", out: "fade" },
@@ -282,10 +291,11 @@ function buildTimeline(
         style: "chunk",
         size: "x-small",
         color: "#ffffff",
-        position: "center",
+        position: "topRight",
       },
       start: 0,
       length: input.durationSeconds,
+      offset: { x: -0.03, y: -0.03 },
       opacity: 0.45,
     });
   }
@@ -355,7 +365,7 @@ export const submitShotstackRender = createServerFn({ method: "POST" })
     let voiceoverUrls: Array<string | undefined> = [];
     if (data.generateVoiceover) {
       voiceoverUrls = await Promise.all(
-        data.scenes.map((s) => (s.voiceoverUrl ? undefined : synthesizeVoiceover(key, s.voiceover))),
+        data.scenes.map((s) => (s.voiceoverUrl ? undefined : synthesizeVoiceover(key, s.voiceover, data.voice))),
       );
     }
 
