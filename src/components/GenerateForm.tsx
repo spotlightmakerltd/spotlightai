@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { CAMPAIGN_GOALS, DURATION_OPTIONS, creditsFor, formatCredits } from "@/lib/pricing";
 import { INDUSTRIES, OTHER_INDUSTRY } from "@/lib/industries";
+import { AUDIENCES, OTHER_AUDIENCE } from "@/lib/audiences";
 import { clearForeignDrafts, draftKey } from "@/lib/drafts";
 import { uploadBackgroundAsset } from "@/lib/upload-asset";
 
