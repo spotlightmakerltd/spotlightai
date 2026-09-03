@@ -150,7 +150,7 @@ export function GenerateForm({
       productName: true,
       productDetails: true,
       campaignGoal: true,
-      targetAudience: true,
+      audience: true,
     });
     if (Object.keys(found).length > 0) return;
     onSubmit(
@@ -159,7 +159,7 @@ export function GenerateForm({
         businessName: isProduct ? values.productName.trim() : values.businessName.trim(),
         niche: isProduct ? values.productDetails.trim() : resolvedIndustry(values),
         campaignGoal: values.campaignGoal,
-        targetAudience: values.targetAudience.trim(),
+        targetAudience: resolvedAudience(values),
         durationSeconds: values.durationSeconds,
         imageUrl: values.imageUrl,
       },
