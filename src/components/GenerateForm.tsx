@@ -38,7 +38,8 @@ type FormState = {
   productName: string;
   productDetails: string;
   campaignGoal: string;
-  targetAudience: string;
+  audience: string;
+  audienceOther: string;
   durationSeconds: number;
   imageUrl: string;
 };
@@ -51,7 +52,8 @@ const EMPTY: FormState = {
   productName: "",
   productDetails: "",
   campaignGoal: "Drive Sales",
-  targetAudience: "",
+  audience: "",
+  audienceOther: "",
   durationSeconds: 30,
   imageUrl: "",
 };
