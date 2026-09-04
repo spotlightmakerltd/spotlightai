@@ -42,7 +42,9 @@ import {
   type VoiceId,
 } from "@/lib/shotstack";
 import { getShotstackRender, submitShotstackRender } from "@/lib/shotstack.functions";
+import { previewVoice } from "@/lib/voice.functions";
 import { uploadBackgroundAsset } from "@/lib/upload-asset";
+
 import type { TimelineStage } from "@/lib/timeline";
 
 
@@ -103,6 +105,27 @@ export function ScriptStudio({
 
   const scenes =
     script?.scenes?.map((s, i) => ({ ...s, onScreenText: captions[i] ?? s.onScreenText })) ?? [];
+
+  async function handleVoicePreview() {
+    setPreviewing(true);
+    setPreviewUrl(null);
+    try {
+      const sample =
+        scenes[0]?.voiceover?.slice(0, 240) ||
+        `Here is how ${businessName || "your brand"} sounds in your next ad.`;
+      const res = await previewVoice({ data: { text: sample, voice } });
+      if (!res.ok || !res.audioUrl) {
+        toast.error(res.error ?? "Voice preview is unavailable right now.");
+        return;
+      }
+      setPreviewUrl(res.audioUrl);
+    } catch {
+      toast.error("Voice preview is unavailable right now.");
+    } finally {
+      setPreviewing(false);
+    }
+  }
+
 
   if (busy) {
     return (
