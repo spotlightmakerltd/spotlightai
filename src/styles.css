@@ -59,6 +59,16 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-landing: var(--landing);
+  --color-landing-foreground: var(--landing-foreground);
+  --color-landing-panel: var(--landing-panel);
+  --color-landing-muted: var(--landing-muted);
+  --color-landing-subtle: var(--landing-subtle);
+  --color-landing-border: var(--landing-border);
+  --color-landing-border-strong: var(--landing-border-strong);
+  --color-landing-violet: var(--landing-violet);
+  --color-landing-cyan: var(--landing-cyan);
+  --color-landing-coral: var(--landing-coral);
 }
 
 :root {
@@ -107,6 +117,22 @@
   );
   --shadow-soft: 0 1px 2px oklch(0.2 0.04 270 / 0.04), 0 10px 30px oklch(0.2 0.04 285 / 0.06);
   --shadow-glow: 0 14px 34px oklch(0.17 0.03 280 / 0.3);
+
+  --landing: oklch(0.115 0.014 280);
+  --landing-foreground: oklch(0.97 0.006 275);
+  --landing-panel: oklch(0.18 0.02 278);
+  --landing-muted: oklch(0.7 0.018 275);
+  --landing-subtle: oklch(0.54 0.02 275);
+  --landing-border: oklch(1 0 0 / 10%);
+  --landing-border-strong: oklch(1 0 0 / 20%);
+  --landing-violet: oklch(0.66 0.22 292);
+  --landing-cyan: oklch(0.78 0.15 196);
+  --landing-coral: oklch(0.72 0.2 28);
+  --shadow-violet: 0 18px 55px oklch(0.56 0.23 292 / 0.18);
+  --shadow-cyan: 0 18px 55px oklch(0.7 0.15 196 / 0.14);
+  --shadow-cyan-dot: 0 0 14px oklch(0.78 0.15 196 / 0.8);
+  --shadow-glass: 0 16px 50px oklch(0 0 0 / 0.38);
+  --shadow-phone: 0 45px 90px oklch(0 0 0 / 0.7), 0 0 70px oklch(0.56 0.23 292 / 0.14);
 }
 
 .theme-mist {
@@ -223,5 +249,129 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--color-muted-foreground);
+}
+
+@utility landing-hero {
+  background:
+    radial-gradient(50% 55% at 78% 35%, oklch(0.46 0.19 292 / 0.2), transparent 72%),
+    radial-gradient(40% 38% at 92% 25%, oklch(0.68 0.14 196 / 0.1), transparent 75%),
+    linear-gradient(to bottom, var(--landing), oklch(0.13 0.018 280));
+}
+
+@utility landing-logo {
+  background: linear-gradient(135deg, var(--landing-violet), oklch(0.55 0.23 300));
+  box-shadow: 0 0 24px oklch(0.6 0.22 292 / 0.3);
+}
+
+@utility landing-cta {
+  background: var(--landing-foreground);
+  color: var(--landing);
+  box-shadow: 0 0 28px oklch(1 0 0 / 0.13);
+  &:hover {
+    background: oklch(0.88 0.012 275);
+    box-shadow: 0 0 36px oklch(0.72 0.16 292 / 0.24);
+  }
+}
+
+@utility landing-gradient-text {
+  background: linear-gradient(100deg, var(--landing-foreground) 5%, var(--landing-violet) 48%, var(--landing-cyan));
+  background-clip: text;
+  color: transparent;
+}
+
+@utility landing-preview-shade {
+  background: linear-gradient(to bottom, transparent 35%, oklch(0.08 0.01 280 / 0.92));
+}
+
+@utility landing-preview-side {
+  background: linear-gradient(to right, var(--landing-panel), transparent 35%);
+}
+
+@utility landing-progress {
+  background: linear-gradient(to right, var(--landing-violet), var(--landing-cyan));
+}
+
+@utility landing-glass {
+  background: oklch(0.18 0.02 278 / 0.62);
+  backdrop-filter: blur(18px) saturate(125%);
+  box-shadow: var(--shadow-glass);
+}
+
+@utility landing-card {
+  background: linear-gradient(145deg, oklch(0.2 0.024 278 / 0.78), oklch(0.15 0.018 278 / 0.72));
+  backdrop-filter: blur(14px);
+}
+
+@utility landing-price {
+  backdrop-filter: blur(12px);
+}
+
+@utility landing-kicker {
+  color: var(--landing-cyan);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+@utility landing-stage {
+  perspective: 1000px;
+}
+
+@utility landing-orbit {
+  position: absolute;
+  border: 1px solid var(--landing-border);
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+@utility landing-orbit-one {
+  inset: 12% 1% 12% 1%;
+  transform: rotate(-12deg);
+}
+
+@utility landing-orbit-two {
+  inset: 20% -4% 18% 6%;
+  border-color: oklch(0.66 0.22 292 / 0.22);
+  transform: rotate(14deg);
+}
+
+@utility landing-accent-cyan {
+  color: var(--landing-cyan);
+}
+
+@utility landing-accent-violet {
+  color: var(--landing-violet);
+}
+
+@utility landing-accent-coral {
+  color: var(--landing-coral);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .landing-phone {
+    animation: landing-float 6s ease-in-out infinite;
+  }
+
+  .landing-orbit-one {
+    animation: landing-orbit 16s linear infinite;
+  }
+
+  .landing-orbit-two {
+    animation: landing-orbit-reverse 20s linear infinite;
+  }
+}
+
+@keyframes landing-float {
+  0%, 100% { transform: translateY(0) rotateY(-2deg); }
+  50% { transform: translateY(-10px) rotateY(2deg); }
+}
+
+@keyframes landing-orbit {
+  to { transform: rotate(348deg); }
+}
+
+@keyframes landing-orbit-reverse {
+  to { transform: rotate(-346deg); }
 }
 
