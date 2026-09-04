@@ -44,12 +44,19 @@ function headers(key: string) {
   return { "x-api-key": key, "Content-Type": "application/json" };
 }
 
-/** Generates a Shotstack text-to-speech asset and waits for its hosted URL. */
+/** Generates a hosted voiceover audio URL for a line of script. */
 async function synthesizeVoiceover(
   key: string,
   text: string,
   voice: string,
 ): Promise<string | undefined> {
+  // Preferred path: hosted speech generation, uploaded to the render CDN.
+  const speech = await synthesizeSpeech(text, voice);
+  if (speech) {
+    const hosted = await ingestToShotstack(key, speech.bytes, speech.mime);
+    if (hosted) return hosted;
+  }
+
   try {
     const res = await fetch(`${CREATE_BASE}/assets`, {
       method: "POST",
