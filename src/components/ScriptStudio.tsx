@@ -9,7 +9,9 @@ import {
   RefreshCw,
   Share2,
   Upload,
+  Volume2,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +42,9 @@ import {
   type VoiceId,
 } from "@/lib/shotstack";
 import { getShotstackRender, submitShotstackRender } from "@/lib/shotstack.functions";
+import { previewVoice } from "@/lib/voice.functions";
 import { uploadBackgroundAsset } from "@/lib/upload-asset";
+
 import type { TimelineStage } from "@/lib/timeline";
 
 
@@ -89,6 +93,9 @@ export function ScriptStudio({
   const [quality, setQuality] = useState<QualityId>("medium");
   const [fps, setFps] = useState<number>(30);
   const [voice, setVoice] = useState<VoiceId>(DEFAULT_VOICE);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+
   const [rendering, setRendering] = useState(false);
   const [renderStatus, setRenderStatus] = useState<string | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
@@ -98,6 +105,27 @@ export function ScriptStudio({
 
   const scenes =
     script?.scenes?.map((s, i) => ({ ...s, onScreenText: captions[i] ?? s.onScreenText })) ?? [];
+
+  async function handleVoicePreview() {
+    setPreviewing(true);
+    setPreviewUrl(null);
+    try {
+      const sample =
+        scenes[0]?.voiceover?.slice(0, 240) ||
+        `Here is how ${businessName || "your brand"} sounds in your next ad.`;
+      const res = await previewVoice({ data: { text: sample, voice } });
+      if (!res.ok || !res.audioUrl) {
+        toast.error(res.error ?? "Voice preview is unavailable right now.");
+        return;
+      }
+      setPreviewUrl(res.audioUrl);
+    } catch {
+      toast.error("Voice preview is unavailable right now.");
+    } finally {
+      setPreviewing(false);
+    }
+  }
+
 
   if (busy) {
     return (
@@ -549,7 +577,13 @@ export function ScriptStudio({
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label className="text-xs">Voice</Label>
-            <Select value={voice} onValueChange={(v) => setVoice(v as VoiceId)}>
+            <Select
+              value={voice}
+              onValueChange={(v) => {
+                setVoice(v as VoiceId);
+                setPreviewUrl(null);
+              }}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -561,7 +595,31 @@ export function ScriptStudio({
                 ))}
               </SelectContent>
             </Select>
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={previewing}
+                onClick={handleVoicePreview}
+              >
+                {previewing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Volume2 className="mr-2 h-4 w-4" />
+                )}
+                {previewing ? "Preparing sample…" : "Hear this voice"}
+              </Button>
+              {previewUrl ? (
+                <audio className="h-9 flex-1" controls autoPlay src={previewUrl} />
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  Listen before you produce the full ad.
+                </span>
+              )}
+            </div>
           </div>
+
           <div className="space-y-2">
             <Label className="text-xs">Frame rate</Label>
             <Select value={String(fps)} onValueChange={(v) => setFps(Number(v))}>
