@@ -114,7 +114,7 @@ function Landing() {
       </header>
 
       <main>
-        <section className="landing-hero relative min-h-[calc(100svh-4rem)] px-4 pb-12 pt-12 sm:px-6 sm:pt-16 lg:pt-20">
+        <section className="landing-hero relative px-4 py-12 sm:px-6 sm:py-16 lg:py-20">
           <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-20">
             <div className="relative z-10 max-w-3xl">
               <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-landing-border bg-landing-panel/70 px-3 py-1.5 text-xs font-semibold text-landing-muted backdrop-blur-md">
@@ -167,7 +167,6 @@ function Landing() {
               </div>
             </div>
           </div>
-          <a href="#ad-styles" aria-label="Explore ad styles" className="absolute bottom-4 left-1/2 hidden -translate-x-1/2 text-landing-subtle transition-colors hover:text-landing-foreground lg:block">Scroll ↓</a>
         </section>
 
         <section id="ad-styles" className="border-y border-landing-border bg-landing-panel/20 px-4 py-20 sm:px-6">
