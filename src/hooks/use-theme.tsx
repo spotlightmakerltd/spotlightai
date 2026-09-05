@@ -2,22 +2,22 @@ import { useCallback, useEffect, useState } from "react";
 
 export const THEMES = [
   { id: "light", label: "Cloud" },
-  { id: "theme-mist", label: "Mist" },
-  { id: "theme-cream", label: "Cream" },
   { id: "dark", label: "Midnight" },
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]["id"];
 
 const STORAGE_KEY = "spotlightmaker-theme";
+const LEGACY = ["theme-mist", "theme-cream"];
 
 export function useTheme() {
   const [theme, setThemeState] = useState<ThemeId>("light");
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY) as ThemeId | null;
-    if (stored) applyTheme(stored);
-    setThemeState(stored ?? "light");
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    const next: ThemeId = stored === "dark" ? "dark" : "light";
+    applyTheme(next);
+    setThemeState(next);
   }, []);
 
   const setTheme = useCallback((next: ThemeId) => {
@@ -26,11 +26,15 @@ export function useTheme() {
     setThemeState(next);
   }, []);
 
-  return { theme, setTheme };
+  const toggleTheme = useCallback(() => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  }, [theme, setTheme]);
+
+  return { theme, setTheme, toggleTheme };
 }
 
 function applyTheme(next: ThemeId) {
   const root = document.documentElement;
-  THEMES.forEach((t) => root.classList.remove(t.id));
-  if (next !== "light") root.classList.add(next);
+  [...LEGACY, "dark", "light"].forEach((c) => root.classList.remove(c));
+  if (next === "dark") root.classList.add("dark");
 }
