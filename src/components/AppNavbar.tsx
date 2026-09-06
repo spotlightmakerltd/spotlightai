@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Moon, Sun, LogOut, Sparkles, Zap, Mail, Settings, CreditCard } from "lucide-react";
+import { Moon, Sun, LogOut, Sparkles, Zap, Mail, Settings, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -100,7 +100,7 @@ export function AppNavbar() {
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/reset-password">
-                    <CreditCard className="mr-2 size-4" /> Change password
+                    <KeyRound className="mr-2 size-4" /> Change password
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
