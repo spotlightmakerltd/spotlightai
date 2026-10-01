@@ -93,16 +93,16 @@ const showcases = [
 ] as const;
 
 const plans = [
-  { name: "Free", price: "$0", detail: "5 credits, no card", features: ["5 starter credits", "All 5 production stages", "Watermarked exports"], cta: "Start free" },
+  { name: "Free", price: "$0", detail: "5 credits, no card", features: ["5 starter credits", "All 5 production stages", "Watermarked exports"], cta: "Start free", featured: false },
   { name: "Studio", price: "$29", detail: "50 credits per month", features: ["50 monthly credits", "Watermark-free exports", "Priority production"], cta: "Choose Studio", featured: true },
-  { name: "Scale", price: "$79", detail: "160 credits per month", features: ["160 monthly credits", "Campaign-ready output", "Volume credit savings"], cta: "Choose Scale" },
+  { name: "Scale", price: "$79", detail: "160 credits per month", features: ["160 monthly credits", "Campaign-ready output", "Volume credit savings"], cta: "Choose Scale", featured: false },
 ] as const;
 
 function Landing() {
   const [activeStage, setActiveStage] = useState(2);
   const [playing, setPlaying] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const stage = stages[activeStage];
+  const stage = stages[activeStage] ?? stages[0];
 
   useEffect(() => {
     if (!playing) return;

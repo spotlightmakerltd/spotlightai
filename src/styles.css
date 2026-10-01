@@ -69,6 +69,7 @@
   --color-landing-violet: var(--landing-violet);
   --color-landing-cyan: var(--landing-cyan);
   --color-landing-coral: var(--landing-coral);
+  --color-landing-lime: var(--landing-lime);
 }
 
 :root {
@@ -382,10 +383,6 @@
     background: oklch(0.19 0.07 302 / 0.8);
     transform: translateY(-2px);
   }
-}
-
-.spotlight-site {
-  --color-landing-lime: var(--landing-lime);
 }
 
 .landing-underline::after {
