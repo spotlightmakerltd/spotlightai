@@ -157,7 +157,7 @@ function Landing() {
           <div className="mx-auto grid max-w-7xl items-center gap-16 lg:grid-cols-[1.04fr_0.96fr] lg:gap-24">
             <div className="relative z-10 max-w-3xl">
               <p className="mb-7 flex items-center gap-2 text-xs font-bold uppercase text-landing-muted"><span className="size-2 rounded-full bg-landing-violet shadow-[var(--shadow-violet-dot)]" /> Five stages. One finished ad.</p>
-              <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl sm:leading-[0.98] md:text-7xl lg:text-[clamp(4.5rem,8vw,6.8rem)] lg:leading-[0.94]">
+              <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight [text-wrap:balance] sm:text-6xl sm:leading-[0.98] md:text-7xl lg:text-[clamp(4.5rem,8vw,6.8rem)] lg:leading-[0.94]">
                 Turn your business into a <span className="landing-gradient-text landing-underline relative inline-block"><span className="whitespace-nowrap">scroll-stopping</span> ad</span> in 60 seconds
               </h1>
               <p className="mt-8 max-w-2xl text-lg leading-8 text-landing-muted sm:text-xl">
