@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useAuth } from "@/hooks/use-auth";
 import {
   ArrowLeft,
   ArrowRight,
@@ -103,6 +104,14 @@ function Landing() {
   const [playing, setPlaying] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const stage = stages[activeStage] ?? stages[0];
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  // OAuth and email-confirmation links return to the origin — send signed-in
+  // users straight to the dashboard once the session is detected.
+  useEffect(() => {
+    if (!loading && user) void navigate({ to: "/dashboard", replace: true });
+  }, [user, loading, navigate]);
 
   useEffect(() => {
     if (!playing) return;

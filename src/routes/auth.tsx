@@ -104,10 +104,12 @@ function AuthPage() {
 
   async function handleGoogle() {
     setError(null);
+    setBusy(true);
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin + "/dashboard" },
+      options: { redirectTo: window.location.origin },
     });
+    setBusy(false);
     if (err) setError(err.message);
   }
 
@@ -138,7 +140,7 @@ function AuthPage() {
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: window.location.origin + "/dashboard",
+        emailRedirectTo: window.location.origin,
       },
     });
     setBusy(false);
