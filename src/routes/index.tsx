@@ -156,14 +156,14 @@ function Landing() {
         <section className="landing-hero relative px-5 pb-24 pt-14 sm:px-8 sm:pt-20 lg:pb-32 lg:pt-24">
           <div className="mx-auto grid max-w-7xl items-center gap-16 lg:grid-cols-[1.04fr_0.96fr] lg:gap-24">
             <div className="relative z-10 max-w-3xl">
-              <p className="mb-7 flex items-center gap-2 text-xs font-bold uppercase text-landing-muted"><span className="size-2 rounded-full bg-landing-violet shadow-[var(--shadow-violet-dot)]" /> Five stages. One finished ad.</p>
-              <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight [text-wrap:balance] sm:text-6xl sm:leading-[0.98] md:text-7xl lg:text-[clamp(3.9rem,5.25vw,4.2rem)] lg:leading-[1.04]">
+              <p className="hero-enter hero-enter-1 mb-7 flex items-center gap-2 text-xs font-bold uppercase text-landing-muted"><span className="size-2 rounded-full bg-landing-violet shadow-[var(--shadow-violet-dot)]" /> Five stages. One finished ad.</p>
+              <h1 className="hero-enter hero-enter-2 text-4xl font-extrabold leading-[1.05] tracking-tight [text-wrap:balance] sm:text-6xl sm:leading-[0.98] md:text-7xl lg:text-[clamp(3.9rem,5.25vw,4.2rem)] lg:leading-[1.04]">
                 Turn your business into a <span className="landing-gradient-text landing-underline relative inline-block"><span className="whitespace-nowrap">scroll-stopping</span> ad</span> in 60 seconds
               </h1>
-              <p className="mt-8 max-w-2xl text-lg leading-8 text-landing-muted sm:text-xl">
+              <p className="hero-enter hero-enter-3 mt-8 max-w-2xl text-lg leading-8 text-landing-muted sm:text-xl">
                 SpotlightMaker writes the hook, shapes every scene, styles your captions and assembles a vertical 9:16 ad ready for TikTok, Reels, Shorts and WhatsApp.
               </p>
-              <div className="mt-10 flex max-w-xl flex-col gap-3 sm:flex-row">
+              <div className="hero-enter hero-enter-4 mt-10 flex max-w-xl flex-col gap-3 sm:flex-row">
                 <Button asChild size="lg" className="landing-primary h-14 flex-1 rounded-full px-7 text-base font-bold"><Link to="/auth">Start free with 5 credits <ArrowRight className="size-5" /></Link></Button>
                 <Button variant="ghost" size="lg" onClick={() => document.querySelector("#workflow")?.scrollIntoView({ behavior: "smooth" })} className="h-14 flex-1 rounded-full border border-landing-border-strong bg-landing-panel/40 text-base font-bold text-landing-foreground hover:bg-landing-panel hover:text-landing-foreground"><Play className="size-4 fill-current" /> See the workflow</Button>
               </div>
