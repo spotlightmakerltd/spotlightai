@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
+import { CREDIT_PACKS, formatMoney } from "@/lib/billing";
 import {
   ArrowLeft,
   ArrowRight,
@@ -87,11 +88,6 @@ const stages = [
   },
 ] as const;
 
-const showcases = [
-  { image: productPreview, tag: "DTC skincare", caption: "Three drops. Fourteen days. Zero filter.", metric: "4.1×", brand: "Lumen Skin", result: "hook-rate vs. their last agency cut" },
-  { image: testimonialPreview, tag: "Gym franchise", caption: "The 6am class nobody wants to leave.", metric: "61%", brand: "Ironhaus", result: "cheaper cost per trial signup" },
-  { image: salePreview, tag: "Local restaurant", caption: "We only make 80 of these a night.", metric: "12k", brand: "Pressroom Burgers", result: "orders traced to one 27-second ad" },
-] as const;
 
 const plans = [
   { name: "Free", price: "$0", detail: "5 credits, no card", features: ["5 starter credits", "All 5 production stages", "Watermarked exports"], cta: "Start free", featured: false },
@@ -131,7 +127,6 @@ function Landing() {
           <Brand />
           <nav className="hidden items-center gap-8 text-sm font-semibold text-landing-muted md:flex" aria-label="Main navigation">
             <a href="#workflow" className="transition-colors hover:text-landing-foreground">Workflow</a>
-            <a href="#showcase" className="transition-colors hover:text-landing-foreground">Results</a>
             <a href="#pricing" className="transition-colors hover:text-landing-foreground">Pricing</a>
             <Link to="/auth" className="transition-colors hover:text-landing-foreground">Sign in</Link>
             <Button asChild className="landing-primary h-10 rounded-full px-5"><Link to="/auth">Start free</Link></Button>
@@ -143,7 +138,7 @@ function Landing() {
         {menuOpen && (
           <nav className="border-t border-landing-border bg-landing-panel/95 px-5 py-5 backdrop-blur-xl md:hidden" aria-label="Mobile navigation">
             <div className="mx-auto flex max-w-7xl flex-col gap-1">
-              {[{ href: "#workflow", label: "Workflow" }, { href: "#showcase", label: "Results" }, { href: "#pricing", label: "Pricing" }].map((item) => (
+              {[{ href: "#workflow", label: "Workflow" }, { href: "#pricing", label: "Pricing" }].map((item) => (
                 <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)} className="border-b border-landing-border py-4 text-lg font-bold">{item.label}</a>
               ))}
               <Button asChild className="landing-primary mt-4 h-12 rounded-full"><Link to="/auth">Start free with 5 credits</Link></Button>
