@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
+import { CREDIT_PACKS, formatMoney } from "@/lib/billing";
 import {
   ArrowLeft,
   ArrowRight,
@@ -87,17 +88,12 @@ const stages = [
   },
 ] as const;
 
-const showcases = [
-  { image: productPreview, tag: "DTC skincare", caption: "Three drops. Fourteen days. Zero filter.", metric: "4.1×", brand: "Lumen Skin", result: "hook-rate vs. their last agency cut" },
-  { image: testimonialPreview, tag: "Gym franchise", caption: "The 6am class nobody wants to leave.", metric: "61%", brand: "Ironhaus", result: "cheaper cost per trial signup" },
-  { image: salePreview, tag: "Local restaurant", caption: "We only make 80 of these a night.", metric: "12k", brand: "Pressroom Burgers", result: "orders traced to one 27-second ad" },
-] as const;
 
-const plans = [
-  { name: "Free", price: "$0", detail: "5 credits, no card", features: ["5 starter credits", "All 5 production stages", "Watermarked exports"], cta: "Start free", featured: false },
-  { name: "Studio", price: "$29", detail: "50 credits per month", features: ["50 monthly credits", "Watermark-free exports", "Priority production"], cta: "Choose Studio", featured: true },
-  { name: "Scale", price: "$79", detail: "160 credits per month", features: ["160 monthly credits", "Campaign-ready output", "Volume credit savings"], cta: "Choose Scale", featured: false },
-] as const;
+const packFeatures: Record<string, string[]> = {
+  starter: ["20 credits, no monthly fee", "All 5 production stages", "≈ 4 full 60-second ads", "Watermarked exports"],
+  pro: ["75 credits in one pack", "Unlocks the Pro tier", "Watermark-free exports", "No production limits"],
+  studio: ["200 credits in one pack", "Watermark-free exports", "No production limits", "Best value for weekly campaigns"],
+} as const;
 
 function Landing() {
   const [activeStage, setActiveStage] = useState(2);
@@ -131,7 +127,6 @@ function Landing() {
           <Brand />
           <nav className="hidden items-center gap-8 text-sm font-semibold text-landing-muted md:flex" aria-label="Main navigation">
             <a href="#workflow" className="transition-colors hover:text-landing-foreground">Workflow</a>
-            <a href="#showcase" className="transition-colors hover:text-landing-foreground">Results</a>
             <a href="#pricing" className="transition-colors hover:text-landing-foreground">Pricing</a>
             <Link to="/auth" className="transition-colors hover:text-landing-foreground">Sign in</Link>
             <Button asChild className="landing-primary h-10 rounded-full px-5"><Link to="/auth">Start free</Link></Button>
@@ -143,7 +138,7 @@ function Landing() {
         {menuOpen && (
           <nav className="border-t border-landing-border bg-landing-panel/95 px-5 py-5 backdrop-blur-xl md:hidden" aria-label="Mobile navigation">
             <div className="mx-auto flex max-w-7xl flex-col gap-1">
-              {[{ href: "#workflow", label: "Workflow" }, { href: "#showcase", label: "Results" }, { href: "#pricing", label: "Pricing" }].map((item) => (
+              {[{ href: "#workflow", label: "Workflow" }, { href: "#pricing", label: "Pricing" }].map((item) => (
                 <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)} className="border-b border-landing-border py-4 text-lg font-bold">{item.label}</a>
               ))}
               <Button asChild className="landing-primary mt-4 h-12 rounded-full"><Link to="/auth">Start free with 5 credits</Link></Button>
@@ -235,57 +230,31 @@ function Landing() {
           </div>
         </section>
 
-        <section id="showcase" className="px-5 py-24 sm:px-8 lg:py-32">
-          <div className="mx-auto max-w-7xl">
-            <div className="max-w-3xl">
-              <p className="landing-kicker">Made in SpotlightMaker</p>
-              <h2 className="mt-5 text-4xl font-extrabold leading-none sm:text-6xl lg:text-7xl">Ads that ran, and what they did</h2>
-              <p className="mt-7 text-lg leading-8 text-landing-muted">Every frame below came out of the same five-stage workflow. No agency, no editor, no re-shoot.</p>
-            </div>
-            <div className="mt-16 grid gap-12 md:grid-cols-3 md:items-start">
-              {showcases.map((item, index) => (
-                <article key={item.brand} className={`showcase-item group ${index === 1 ? "md:mt-24" : index === 2 ? "md:mt-48" : ""}`}>
-                  <div className="relative aspect-[9/14] overflow-hidden rounded-[2rem] border border-landing-border-strong bg-landing-panel shadow-[var(--shadow-panel)]">
-                    <img src={item.image} alt={`${item.brand} vertical advertisement`} width={768} height={1195} loading="lazy" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
-                    <div className="landing-preview-shade absolute inset-0" />
-                    <span className="absolute left-5 top-5 rounded-full border border-landing-border bg-landing/55 px-3 py-1.5 text-xs font-semibold backdrop-blur-md">{item.tag}</span>
-                    <span className="absolute right-5 top-5 flex size-11 items-center justify-center rounded-full bg-landing-foreground/15 backdrop-blur-md"><Play className="size-4 fill-current" /></span>
-                    <p className="absolute inset-x-6 bottom-7 text-2xl font-extrabold leading-tight">{item.caption}</p>
-                  </div>
-                  <div className="mt-7 flex items-start gap-5">
-                    <strong className="text-5xl font-extrabold text-landing-violet">{item.metric}</strong>
-                    <p className="pt-1 text-sm leading-6 text-landing-muted"><b className="block text-base text-landing-foreground">{item.brand}</b>{item.result}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
 
         <section className="border-y border-landing-border bg-landing-panel/25 px-5 py-24 sm:px-8 lg:py-32">
           <div className="mx-auto grid max-w-7xl gap-14 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
             <div><p className="landing-kicker">A complete production team</p><h2 className="mt-5 max-w-3xl text-4xl font-extrabold leading-none sm:text-6xl lg:text-7xl">The parts you’d otherwise hire for</h2><p className="mt-7 max-w-2xl text-lg leading-8 text-landing-muted">A copywriter, an editor, a voice actor and a media buyer’s checklist — folded into the workflow instead of bolted on as features.</p></div>
             <div className="grid grid-cols-2 border-t border-landing-border pt-8">
               <div><p className="text-sm text-landing-muted">Median production</p><p className="mt-3 text-5xl font-extrabold">58s</p></div>
-              <div><p className="text-sm text-landing-muted">Ads shipped</p><p className="mt-3 text-5xl font-extrabold">412k</p></div>
+              <div><p className="text-sm text-landing-muted">Longest ad</p><p className="mt-3 text-5xl font-extrabold">60s</p></div>
             </div>
           </div>
         </section>
 
         <section id="pricing" className="px-5 py-24 sm:px-8 lg:py-32">
           <div className="mx-auto max-w-7xl">
-            <div className="mx-auto max-w-3xl text-center"><p className="landing-kicker">Simple credit pricing</p><h2 className="mt-5 text-4xl font-extrabold leading-none sm:text-6xl lg:text-7xl">One credit system. No production surprises.</h2><p className="mt-7 text-lg leading-8 text-landing-muted">Drafts and refinements are free. Credits are used when your finished ad enters production.</p></div>
+            <div className="mx-auto max-w-3xl text-center"><p className="landing-kicker">Simple credit pricing</p><h2 className="mt-5 text-4xl font-extrabold leading-none sm:text-6xl lg:text-7xl">One credit system. No production surprises.</h2><p className="mt-7 text-lg leading-8 text-landing-muted">Every new account starts with 5 free credits. Drafts and refinements are always free — credits are only used when your finished ad enters production.</p></div>
             <div className="mt-16 grid gap-5 lg:grid-cols-3 lg:items-start">
-              {plans.map((plan) => (
-                <article key={plan.name} className={`pricing-card relative rounded-[2rem] border p-7 sm:p-9 ${plan.featured ? "is-featured lg:-mt-5 lg:pb-14 lg:pt-11" : "border-landing-border bg-landing-panel/35"}`}>
-                  {plan.featured && <span className="absolute right-7 top-7 rounded-full bg-landing-violet px-3 py-1 text-xs font-bold">Most popular</span>}
-                  <p className="text-xl font-bold">{plan.name}</p>
-                  <div className="mt-9 flex items-end gap-2"><span className="text-6xl font-extrabold">{plan.price}</span>{plan.name !== "Free" && <span className="pb-2 text-landing-muted">/month</span>}</div>
-                  <p className="mt-3 text-landing-muted">{plan.detail}</p>
+              {CREDIT_PACKS.map((pack) => (
+                <article key={pack.id} className={`pricing-card relative rounded-[2rem] border p-7 sm:p-9 ${pack.popular ? "is-featured lg:-mt-5 lg:pb-14 lg:pt-11" : "border-landing-border bg-landing-panel/35"}`}>
+                  {pack.popular && <span className="absolute right-7 top-7 rounded-full bg-landing-violet px-3 py-1 text-xs font-bold">Most popular</span>}
+                  <p className="text-xl font-bold">{pack.label}</p>
+                  <div className="mt-9 flex flex-wrap items-end gap-x-3 gap-y-1"><span className="text-5xl font-extrabold sm:text-6xl">{formatMoney(pack, "paystack")}</span><span className="pb-2 text-landing-muted">≈ {formatMoney(pack, "stripe")}</span></div>
+                  <p className="mt-3 text-landing-muted">{pack.credits} credits · one-time top-up{pack.tier === "pro" ? " · unlocks the Pro tier" : ""}</p>
                   <ul className="my-9 space-y-4 border-y border-landing-border py-7">
-                    {plan.features.map((feature) => <li key={feature} className="flex items-center gap-3 text-sm text-landing-muted"><Check className="size-5 text-landing-lime" />{feature}</li>)}
+                    {(packFeatures[pack.id] ?? []).map((feature) => <li key={feature} className="flex items-center gap-3 text-sm text-landing-muted"><Check className="size-5 text-landing-lime" />{feature}</li>)}
                   </ul>
-                  <Button asChild className={`h-13 w-full rounded-full text-base font-bold ${plan.featured ? "landing-primary" : "bg-landing-foreground text-landing hover:bg-landing-foreground/85"}`}><Link to="/auth">{plan.cta}<ChevronRight className="size-4" /></Link></Button>
+                  <Button asChild className={`h-13 w-full rounded-full text-base font-bold ${pack.popular ? "landing-primary" : "bg-landing-foreground text-landing hover:bg-landing-foreground/85"}`}><Link to="/auth">{pack.popular ? "Get the Pro pack" : "Start with this pack"}<ChevronRight className="size-4" /></Link></Button>
                 </article>
               ))}
             </div>
@@ -296,7 +265,7 @@ function Landing() {
       <footer className="border-t border-landing-border px-5 py-14 sm:px-8">
         <div className="mx-auto grid max-w-7xl gap-12 md:grid-cols-[1.5fr_1fr_1fr]">
           <div><Brand /><p className="mt-6 max-w-sm text-sm leading-7 text-landing-muted">Vertical ads for ambitious businesses, written, styled and assembled in about a minute.</p></div>
-          <div><p className="text-xs font-bold uppercase text-landing-foreground">Product</p><div className="mt-5 flex flex-col gap-4 text-sm text-landing-muted"><a href="#workflow">Workflow</a><a href="#showcase">Results</a><a href="#pricing">Pricing</a></div></div>
+          <div><p className="text-xs font-bold uppercase text-landing-foreground">Product</p><div className="mt-5 flex flex-col gap-4 text-sm text-landing-muted"><a href="#workflow">Workflow</a><a href="#pricing">Pricing</a></div></div>
           <div><p className="text-xs font-bold uppercase text-landing-foreground">Account</p><div className="mt-5 flex flex-col gap-4 text-sm text-landing-muted"><Link to="/auth">Sign in</Link><Link to="/auth">Create account</Link></div></div>
         </div>
         <p className="mx-auto mt-14 max-w-7xl border-t border-landing-border pt-6 text-xs text-landing-subtle">© 2026 SpotlightMaker. Make attention count.</p>
