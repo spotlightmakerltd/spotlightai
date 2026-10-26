@@ -89,11 +89,11 @@ const stages = [
 ] as const;
 
 
-const plans = [
-  { name: "Free", price: "$0", detail: "5 credits, no card", features: ["5 starter credits", "All 5 production stages", "Watermarked exports"], cta: "Start free", featured: false },
-  { name: "Studio", price: "$29", detail: "50 credits per month", features: ["50 monthly credits", "Watermark-free exports", "Priority production"], cta: "Choose Studio", featured: true },
-  { name: "Scale", price: "$79", detail: "160 credits per month", features: ["160 monthly credits", "Campaign-ready output", "Volume credit savings"], cta: "Choose Scale", featured: false },
-] as const;
+const packFeatures: Record<string, string[]> = {
+  starter: ["20 credits, no monthly fee", "All 5 production stages", "≈ 4 full 60-second ads", "Watermarked exports"],
+  pro: ["75 credits in one pack", "Unlocks the Pro tier", "Watermark-free exports", "No production limits"],
+  studio: ["200 credits in one pack", "Watermark-free exports", "No production limits", "Best value for weekly campaigns"],
+} as const;
 
 function Landing() {
   const [activeStage, setActiveStage] = useState(2);
@@ -230,32 +230,6 @@ function Landing() {
           </div>
         </section>
 
-        <section id="showcase" className="px-5 py-24 sm:px-8 lg:py-32">
-          <div className="mx-auto max-w-7xl">
-            <div className="max-w-3xl">
-              <p className="landing-kicker">Made in SpotlightMaker</p>
-              <h2 className="mt-5 text-4xl font-extrabold leading-none sm:text-6xl lg:text-7xl">Ads that ran, and what they did</h2>
-              <p className="mt-7 text-lg leading-8 text-landing-muted">Every frame below came out of the same five-stage workflow. No agency, no editor, no re-shoot.</p>
-            </div>
-            <div className="mt-16 grid gap-12 md:grid-cols-3 md:items-start">
-              {showcases.map((item, index) => (
-                <article key={item.brand} className={`showcase-item group ${index === 1 ? "md:mt-24" : index === 2 ? "md:mt-48" : ""}`}>
-                  <div className="relative aspect-[9/14] overflow-hidden rounded-[2rem] border border-landing-border-strong bg-landing-panel shadow-[var(--shadow-panel)]">
-                    <img src={item.image} alt={`${item.brand} vertical advertisement`} width={768} height={1195} loading="lazy" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
-                    <div className="landing-preview-shade absolute inset-0" />
-                    <span className="absolute left-5 top-5 rounded-full border border-landing-border bg-landing/55 px-3 py-1.5 text-xs font-semibold backdrop-blur-md">{item.tag}</span>
-                    <span className="absolute right-5 top-5 flex size-11 items-center justify-center rounded-full bg-landing-foreground/15 backdrop-blur-md"><Play className="size-4 fill-current" /></span>
-                    <p className="absolute inset-x-6 bottom-7 text-2xl font-extrabold leading-tight">{item.caption}</p>
-                  </div>
-                  <div className="mt-7 flex items-start gap-5">
-                    <strong className="text-5xl font-extrabold text-landing-violet">{item.metric}</strong>
-                    <p className="pt-1 text-sm leading-6 text-landing-muted"><b className="block text-base text-landing-foreground">{item.brand}</b>{item.result}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
 
         <section className="border-y border-landing-border bg-landing-panel/25 px-5 py-24 sm:px-8 lg:py-32">
           <div className="mx-auto grid max-w-7xl gap-14 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
