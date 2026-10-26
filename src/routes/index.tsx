@@ -236,25 +236,25 @@ function Landing() {
             <div><p className="landing-kicker">A complete production team</p><h2 className="mt-5 max-w-3xl text-4xl font-extrabold leading-none sm:text-6xl lg:text-7xl">The parts you’d otherwise hire for</h2><p className="mt-7 max-w-2xl text-lg leading-8 text-landing-muted">A copywriter, an editor, a voice actor and a media buyer’s checklist — folded into the workflow instead of bolted on as features.</p></div>
             <div className="grid grid-cols-2 border-t border-landing-border pt-8">
               <div><p className="text-sm text-landing-muted">Median production</p><p className="mt-3 text-5xl font-extrabold">58s</p></div>
-              <div><p className="text-sm text-landing-muted">Ads shipped</p><p className="mt-3 text-5xl font-extrabold">412k</p></div>
+              <div><p className="text-sm text-landing-muted">Longest ad</p><p className="mt-3 text-5xl font-extrabold">60s</p></div>
             </div>
           </div>
         </section>
 
         <section id="pricing" className="px-5 py-24 sm:px-8 lg:py-32">
           <div className="mx-auto max-w-7xl">
-            <div className="mx-auto max-w-3xl text-center"><p className="landing-kicker">Simple credit pricing</p><h2 className="mt-5 text-4xl font-extrabold leading-none sm:text-6xl lg:text-7xl">One credit system. No production surprises.</h2><p className="mt-7 text-lg leading-8 text-landing-muted">Drafts and refinements are free. Credits are used when your finished ad enters production.</p></div>
+            <div className="mx-auto max-w-3xl text-center"><p className="landing-kicker">Simple credit pricing</p><h2 className="mt-5 text-4xl font-extrabold leading-none sm:text-6xl lg:text-7xl">One credit system. No production surprises.</h2><p className="mt-7 text-lg leading-8 text-landing-muted">Every new account starts with 5 free credits. Drafts and refinements are always free — credits are only used when your finished ad enters production.</p></div>
             <div className="mt-16 grid gap-5 lg:grid-cols-3 lg:items-start">
-              {plans.map((plan) => (
-                <article key={plan.name} className={`pricing-card relative rounded-[2rem] border p-7 sm:p-9 ${plan.featured ? "is-featured lg:-mt-5 lg:pb-14 lg:pt-11" : "border-landing-border bg-landing-panel/35"}`}>
-                  {plan.featured && <span className="absolute right-7 top-7 rounded-full bg-landing-violet px-3 py-1 text-xs font-bold">Most popular</span>}
-                  <p className="text-xl font-bold">{plan.name}</p>
-                  <div className="mt-9 flex items-end gap-2"><span className="text-6xl font-extrabold">{plan.price}</span>{plan.name !== "Free" && <span className="pb-2 text-landing-muted">/month</span>}</div>
-                  <p className="mt-3 text-landing-muted">{plan.detail}</p>
+              {CREDIT_PACKS.map((pack) => (
+                <article key={pack.id} className={`pricing-card relative rounded-[2rem] border p-7 sm:p-9 ${pack.popular ? "is-featured lg:-mt-5 lg:pb-14 lg:pt-11" : "border-landing-border bg-landing-panel/35"}`}>
+                  {pack.popular && <span className="absolute right-7 top-7 rounded-full bg-landing-violet px-3 py-1 text-xs font-bold">Most popular</span>}
+                  <p className="text-xl font-bold">{pack.label}</p>
+                  <div className="mt-9 flex flex-wrap items-end gap-x-3 gap-y-1"><span className="text-5xl font-extrabold sm:text-6xl">{formatMoney(pack, "paystack")}</span><span className="pb-2 text-landing-muted">≈ {formatMoney(pack, "stripe")}</span></div>
+                  <p className="mt-3 text-landing-muted">{pack.credits} credits · one-time top-up{pack.tier === "pro" ? " · unlocks the Pro tier" : ""}</p>
                   <ul className="my-9 space-y-4 border-y border-landing-border py-7">
-                    {plan.features.map((feature) => <li key={feature} className="flex items-center gap-3 text-sm text-landing-muted"><Check className="size-5 text-landing-lime" />{feature}</li>)}
+                    {packFeatures[pack.id].map((feature) => <li key={feature} className="flex items-center gap-3 text-sm text-landing-muted"><Check className="size-5 text-landing-lime" />{feature}</li>)}
                   </ul>
-                  <Button asChild className={`h-13 w-full rounded-full text-base font-bold ${plan.featured ? "landing-primary" : "bg-landing-foreground text-landing hover:bg-landing-foreground/85"}`}><Link to="/auth">{plan.cta}<ChevronRight className="size-4" /></Link></Button>
+                  <Button asChild className={`h-13 w-full rounded-full text-base font-bold ${pack.popular ? "landing-primary" : "bg-landing-foreground text-landing hover:bg-landing-foreground/85"}`}><Link to="/auth">{pack.popular ? "Get the Pro pack" : "Start with this pack"}<ChevronRight className="size-4" /></Link></Button>
                 </article>
               ))}
             </div>
@@ -265,7 +265,7 @@ function Landing() {
       <footer className="border-t border-landing-border px-5 py-14 sm:px-8">
         <div className="mx-auto grid max-w-7xl gap-12 md:grid-cols-[1.5fr_1fr_1fr]">
           <div><Brand /><p className="mt-6 max-w-sm text-sm leading-7 text-landing-muted">Vertical ads for ambitious businesses, written, styled and assembled in about a minute.</p></div>
-          <div><p className="text-xs font-bold uppercase text-landing-foreground">Product</p><div className="mt-5 flex flex-col gap-4 text-sm text-landing-muted"><a href="#workflow">Workflow</a><a href="#showcase">Results</a><a href="#pricing">Pricing</a></div></div>
+          <div><p className="text-xs font-bold uppercase text-landing-foreground">Product</p><div className="mt-5 flex flex-col gap-4 text-sm text-landing-muted"><a href="#workflow">Workflow</a><a href="#pricing">Pricing</a></div></div>
           <div><p className="text-xs font-bold uppercase text-landing-foreground">Account</p><div className="mt-5 flex flex-col gap-4 text-sm text-landing-muted"><Link to="/auth">Sign in</Link><Link to="/auth">Create account</Link></div></div>
         </div>
         <p className="mx-auto mt-14 max-w-7xl border-t border-landing-border pt-6 text-xs text-landing-subtle">© 2026 SpotlightMaker. Make attention count.</p>
