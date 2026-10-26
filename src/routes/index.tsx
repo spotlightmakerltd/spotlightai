@@ -252,7 +252,7 @@ function Landing() {
                   <div className="mt-9 flex flex-wrap items-end gap-x-3 gap-y-1"><span className="text-5xl font-extrabold sm:text-6xl">{formatMoney(pack, "paystack")}</span><span className="pb-2 text-landing-muted">≈ {formatMoney(pack, "stripe")}</span></div>
                   <p className="mt-3 text-landing-muted">{pack.credits} credits · one-time top-up{pack.tier === "pro" ? " · unlocks the Pro tier" : ""}</p>
                   <ul className="my-9 space-y-4 border-y border-landing-border py-7">
-                    {packFeatures[pack.id].map((feature) => <li key={feature} className="flex items-center gap-3 text-sm text-landing-muted"><Check className="size-5 text-landing-lime" />{feature}</li>)}
+                    {(packFeatures[pack.id] ?? []).map((feature) => <li key={feature} className="flex items-center gap-3 text-sm text-landing-muted"><Check className="size-5 text-landing-lime" />{feature}</li>)}
                   </ul>
                   <Button asChild className={`h-13 w-full rounded-full text-base font-bold ${pack.popular ? "landing-primary" : "bg-landing-foreground text-landing hover:bg-landing-foreground/85"}`}><Link to="/auth">{pack.popular ? "Get the Pro pack" : "Start with this pack"}<ChevronRight className="size-4" /></Link></Button>
                 </article>
