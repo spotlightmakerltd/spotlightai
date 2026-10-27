@@ -103,6 +103,19 @@ export function ScriptStudio({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState(false);
 
+  type ClipState = {
+    status: "queued" | "running" | "done" | "failed";
+    requestId?: string;
+    videoUrl?: string;
+    error?: string;
+  };
+  const [clips, setClips] = useState<Record<number, ClipState>>({});
+
+  // Fresh script, fresh clips — old motion previews never leak into a new ad.
+  useEffect(() => {
+    setClips({});
+  }, [script]);
+
   const [rendering, setRendering] = useState(false);
   const [renderStatus, setRenderStatus] = useState<string | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
