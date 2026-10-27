@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   Check,
@@ -8,6 +8,7 @@ import {
   Loader2,
   RefreshCw,
   Share2,
+  Sparkles,
   Upload,
   Volume2,
 } from "lucide-react";
@@ -42,6 +43,12 @@ import {
   type VoiceId,
 } from "@/lib/shotstack";
 import { getShotstackRender, submitShotstackRender } from "@/lib/shotstack.functions";
+import {
+  checkSceneVideo,
+  startSceneVideo,
+  type SceneVideoCheck,
+  type SceneVideoStart,
+} from "@/lib/fal.functions";
 import { previewVoice } from "@/lib/voice.functions";
 import { uploadBackgroundAsset } from "@/lib/upload-asset";
 
