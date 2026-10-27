@@ -224,6 +224,92 @@ export function ScriptStudio({
     toast.success("Visual added to this scene");
   }
 
+  function isImageUrl(url?: string) {
+    return !!url && /\.(png|jpe?g|webp|gif|avif)(\?|$)/i.test(url);
+  }
+
+  /** Generates a real motion video clip for one scene via the fal.ai video engine. */
+  async function generateSceneVisual(index: number) {
+    const scene = scenes[index];
+    if (!scene) return;
+    const per = Math.max(5, Math.round(durationSeconds / Math.max(1, scenes.length)));
+    const duration = per >= 8 ? 10 : 5;
+    const pasted = backgrounds[index]?.trim();
+    const imageUrl = isImageUrl(pasted)
+      ? pasted!
+      : isImageUrl(productImageUrl)
+        ? productImageUrl!
+        : undefined;
+
+    setClips((c) => ({ ...c, [index]: { status: "queued" } }));
+    onStage?.("render", "Directing video scenes…", "running");
+
+    const started: SceneVideoStart = await startSceneVideo({
+      data: {
+        visualPrompt: `Cinematic vertical advertising shot for a short-form social video ad. Scene "${scene.label}" for ${businessName || "the brand"}. ${scene.visual || scene.caption}. Photoreal, rich colour grading, dramatic lighting, smooth single camera move, plenty of clean space for caption text.`,
+        ...(imageUrl ? { imageUrl } : {}),
+        durationSeconds: duration,
+      },
+    }).catch(
+      (): SceneVideoStart => ({
+        ok: false,
+        error: "Could not reach the video engine. Check your connection and retry.",
+      }),
+    );
+
+    if (!started.ok || !started.requestId) {
+      setClips((c) => ({
+        ...c,
+        [index]: { status: "failed", error: started.error ?? "Could not start video generation." },
+      }));
+      return;
+    }
+
+    setClips((c) => ({ ...c, [index]: { status: "queued", requestId: started.requestId } }));
+    let transient = 0;
+    for (let attempt = 0; attempt < 120; attempt++) {
+      await new Promise((r) => setTimeout(r, 5000));
+      const res: SceneVideoCheck | null = await checkSceneVideo({
+        data: { requestId: started.requestId! },
+      }).catch(() => null);
+      if (!res) {
+        transient++;
+        if (transient >= 4) {
+          setClips((c) => ({
+            ...c,
+            [index]: { status: "failed", error: "We lost contact with the video engine. Try again." },
+          }));
+          return;
+        }
+        continue;
+      }
+      if (res.status === "queued" || res.status === "running") {
+        setClips((c) => ({ ...c, [index]: { status: res.status, requestId: started.requestId } }));
+        continue;
+      }
+      if (res.status === "done" && res.videoUrl) {
+        setClips((c) => ({ ...c, [index]: { status: "done", videoUrl: res.videoUrl } }));
+        toast.success(`Scene ${index + 1} motion clip is ready`);
+        return;
+      }
+      setClips((c) => ({
+        ...c,
+        [index]: { status: "failed", error: res.error ?? "Video generation failed." },
+      }));
+      return;
+    }
+    setClips((c) => ({
+      ...c,
+      [index]: { status: "failed", error: "Video generation timed out. Try again." },
+    }));
+  }
+
+  async function generateAllVisuals() {
+    await Promise.all(scenes.map((_, i) => generateSceneVisual(i)));
+  }
+
+  const anyClipBusy = Object.values(clips).some((c) => c.status === "queued" || c.status === "running");
+
   function failRender(message: string) {
     setRendering(false);
     setRenderStatus(null);
