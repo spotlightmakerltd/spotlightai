@@ -27,10 +27,14 @@ export function describeFalError(status: number, body: string): string {
   } catch {
     detail = body.slice(0, 200);
   }
+  const lower = detail.toLowerCase();
   if (status === 401 || status === 403) {
+    if (lower.includes("balance") || lower.includes("locked") || lower.includes("top up")) {
+      return "Your fal.ai account is out of credits — top it up at fal.ai/dashboard/billing and retry.";
+    }
     return "Your fal.ai API key was rejected. Check that FAL_API_KEY in the project secrets is valid.";
   }
-  if (status === 402) return "Your fal.ai account is out of credits — top it up at fal.ai and retry.";
+  if (status === 402) return "Your fal.ai account is out of credits — top it up at fal.ai/dashboard/billing and retry.";
   if (status === 429) return "The video engine is rate limiting requests — wait a moment and retry.";
   if (status === 422) return `The video engine rejected this request${detail ? `: ${detail}` : ""}.`;
   return `The video engine request failed (${status})${detail ? `: ${detail}` : ""}.`;
