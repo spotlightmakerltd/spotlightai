@@ -246,7 +246,7 @@ export function ScriptStudio({
 
     const started: SceneVideoStart = await startSceneVideo({
       data: {
-        visualPrompt: `Cinematic vertical advertising shot for a short-form social video ad. Scene "${scene.label}" for ${businessName || "the brand"}. ${scene.visual || scene.caption}. Photoreal, rich colour grading, dramatic lighting, smooth single camera move, plenty of clean space for caption text.`,
+        visualPrompt: `Cinematic vertical advertising shot for a short-form social video ad. Scene "${scene.label}" for ${businessName || "the brand"}. ${scene.visual || scene.onScreenText}. Photoreal, rich colour grading, dramatic lighting, smooth single camera move, plenty of clean space for caption text.`,
         ...(imageUrl ? { imageUrl } : {}),
         durationSeconds: duration,
       },
@@ -265,12 +265,13 @@ export function ScriptStudio({
       return;
     }
 
-    setClips((c) => ({ ...c, [index]: { status: "queued", requestId: started.requestId } }));
+    const requestId = started.requestId;
+    setClips((c) => ({ ...c, [index]: { status: "queued", requestId } }));
     let transient = 0;
     for (let attempt = 0; attempt < 120; attempt++) {
       await new Promise((r) => setTimeout(r, 5000));
       const res: SceneVideoCheck | null = await checkSceneVideo({
-        data: { requestId: started.requestId! },
+        data: { requestId },
       }).catch(() => null);
       if (!res) {
         transient++;
@@ -284,11 +285,12 @@ export function ScriptStudio({
         continue;
       }
       if (res.status === "queued" || res.status === "running") {
-        setClips((c) => ({ ...c, [index]: { status: res.status, requestId: started.requestId } }));
+        setClips((c) => ({ ...c, [index]: { status: res.status, requestId } }));
         continue;
       }
-      if (res.status === "done" && res.videoUrl) {
-        setClips((c) => ({ ...c, [index]: { status: "done", videoUrl: res.videoUrl } }));
+      const clipUrl = res.videoUrl;
+      if (res.status === "done" && clipUrl) {
+        setClips((c) => ({ ...c, [index]: { status: "done", videoUrl: clipUrl } }));
         toast.success(`Scene ${index + 1} motion clip is ready`);
         return;
       }
@@ -350,8 +352,11 @@ export function ScriptStudio({
           caption: s.onScreenText,
           voiceover: s.voiceover,
           visual: s.visual,
-          ...(backgrounds[i]?.trim() || productImageUrl
-            ? { backgroundUrl: (backgrounds[i]?.trim() || productImageUrl)! }
+          // Generated motion clips take precedence, then user pastes/uploads.
+          ...(clips[i]?.videoUrl || backgrounds[i]?.trim() || productImageUrl
+            ? {
+                backgroundUrl: (clips[i]?.videoUrl || backgrounds[i]?.trim() || productImageUrl)!,
+              }
             : {}),
         })),
       },
@@ -457,6 +462,29 @@ export function ScriptStudio({
           </div>
         </div>
 
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+            Scenes
+          </h3>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={anyClipBusy}
+            onClick={() => void generateAllVisuals()}
+          >
+            {anyClipBusy ? (
+              <Loader2 className="mr-1 size-4 animate-spin" />
+            ) : (
+              <Sparkles className="mr-1 size-4" />
+            )}
+            {anyClipBusy ? "Directing your scenes…" : "Generate motion for every scene"}
+          </Button>
+        </div>
+        <p className="text-[11px] text-muted-foreground -mt-2">
+          Real motion video per scene, generated from your script and product photo with your
+          fal.ai credits (about $0.07 per second of clip).
+        </p>
+
         <div className="space-y-3">
           {scenes.map((scene, i) => (
             <div key={scene.label + i} className="rounded-xl border border-border bg-muted/40 p-4">
@@ -513,9 +541,67 @@ export function ScriptStudio({
                   </Button>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Leave blank and we create a cinematic visual for this scene automatically.
-                  Uploads are hosted securely for production. Max 50MB.
+                  Or paste a public image/video URL. Uploads are hosted securely for production.
+                  Max 50MB.
                 </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs">Motion video</Label>
+                {(() => {
+                  const clip = clips[i];
+                  if (clip?.status === "done" && clip.videoUrl) {
+                    return (
+                      <div className="flex items-center gap-3">
+                        <video
+                          src={clip.videoUrl}
+                          autoPlay
+                          muted
+                          loop
+                          playsInline
+                          className="aspect-[9/16] w-20 rounded-lg border border-border object-cover"
+                        />
+                        <div className="space-y-2">
+                          <p className="text-xs text-muted-foreground">
+                            This scene will use this motion clip in the final ad.
+                          </p>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={anyClipBusy}
+                            onClick={() => void generateSceneVisual(i)}
+                          >
+                            <RefreshCw className="mr-1 size-3.5" /> Regenerate
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={anyClipBusy}
+                        onClick={() => void generateSceneVisual(i)}
+                      >
+                        {clip?.status === "queued" || clip?.status === "running" ? (
+                          <Loader2 className="mr-1 size-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="mr-1 size-4" />
+                        )}
+                        {clip?.status === "queued"
+                          ? "In the video queue…"
+                          : clip?.status === "running"
+                            ? "Directing your scene…"
+                            : "Generate motion video"}
+                      </Button>
+                      {clip?.status === "failed" && (
+                        <p className="text-xs text-destructive">{clip.error}</p>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
             </div>
@@ -604,12 +690,22 @@ export function ScriptStudio({
           <div
             className="relative mx-auto flex aspect-[9/16] w-full max-w-[240px] flex-col justify-end overflow-hidden rounded-2xl border border-border p-4 pb-[18%]"
             style={{
-              background: backgrounds[0]?.trim() || productImageUrl
-                ? undefined
-                : `linear-gradient(160deg, #0f0b23 0%, ${style.highlight} 100%)`,
+              background:
+                clips[0]?.videoUrl || backgrounds[0]?.trim() || productImageUrl
+                  ? undefined
+                  : `linear-gradient(160deg, #0f0b23 0%, ${style.highlight} 100%)`,
             }}
           >
-            {(backgrounds[0]?.trim() || productImageUrl) && (
+            {clips[0]?.videoUrl ? (
+              <video
+                src={clips[0].videoUrl}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="absolute inset-0 size-full object-cover"
+              />
+            ) : (backgrounds[0]?.trim() || productImageUrl) && (
               <img
                 src={backgrounds[0]?.trim() || productImageUrl}
                 alt="Scene 1 background preview"
