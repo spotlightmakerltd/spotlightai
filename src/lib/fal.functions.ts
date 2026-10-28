@@ -63,7 +63,10 @@ export const checkSceneVideo = createServerFn({ method: "POST" })
     try {
       const state = await falFetchStatus(data.requestId);
       if (state.status === "IN_QUEUE") {
-        return { status: "queued", queuePosition: state.queue_position };
+        const queuePosition = state.queue_position;
+        return typeof queuePosition === "number"
+          ? { status: "queued" as const, queuePosition }
+          : { status: "queued" as const };
       }
       if (state.status === "IN_PROGRESS") return { status: "running" };
       // COMPLETED is also the terminal state for failed runs — check for an error first.

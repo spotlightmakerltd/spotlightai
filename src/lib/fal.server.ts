@@ -7,7 +7,7 @@ const QUEUE_APP = "kling-video";
 export const FAL_VIDEO_ENDPOINT = `${QUEUE_OWNER}/kling-video/v2.5-turbo/pro`;
 
 export class FalApiError extends Error {
-  status?: number;
+  status: number | undefined;
   constructor(message: string, status?: number) {
     super(message);
     this.status = status;

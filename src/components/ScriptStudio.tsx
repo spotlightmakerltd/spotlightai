@@ -265,12 +265,13 @@ export function ScriptStudio({
       return;
     }
 
-    setClips((c) => ({ ...c, [index]: { status: "queued", requestId: started.requestId } }));
+    const requestId = started.requestId;
+    setClips((c) => ({ ...c, [index]: { status: "queued", requestId } }));
     let transient = 0;
     for (let attempt = 0; attempt < 120; attempt++) {
       await new Promise((r) => setTimeout(r, 5000));
       const res: SceneVideoCheck | null = await checkSceneVideo({
-        data: { requestId: started.requestId! },
+        data: { requestId },
       }).catch(() => null);
       if (!res) {
         transient++;
@@ -284,11 +285,12 @@ export function ScriptStudio({
         continue;
       }
       if (res.status === "queued" || res.status === "running") {
-        setClips((c) => ({ ...c, [index]: { status: res.status, requestId: started.requestId } }));
+        setClips((c) => ({ ...c, [index]: { status: res.status, requestId } }));
         continue;
       }
-      if (res.status === "done" && res.videoUrl) {
-        setClips((c) => ({ ...c, [index]: { status: "done", videoUrl: res.videoUrl } }));
+      const clipUrl = res.videoUrl;
+      if (res.status === "done" && clipUrl) {
+        setClips((c) => ({ ...c, [index]: { status: "done", videoUrl: clipUrl } }));
         toast.success(`Scene ${index + 1} motion clip is ready`);
         return;
       }
