@@ -350,8 +350,11 @@ export function ScriptStudio({
           caption: s.onScreenText,
           voiceover: s.voiceover,
           visual: s.visual,
-          ...(backgrounds[i]?.trim() || productImageUrl
-            ? { backgroundUrl: (backgrounds[i]?.trim() || productImageUrl)! }
+          // Generated motion clips take precedence, then user pastes/uploads.
+          ...(clips[i]?.videoUrl || backgrounds[i]?.trim() || productImageUrl
+            ? {
+                backgroundUrl: (clips[i]?.videoUrl || backgrounds[i]?.trim() || productImageUrl)!,
+              }
             : {}),
         })),
       },
