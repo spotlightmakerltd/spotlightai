@@ -460,6 +460,29 @@ export function ScriptStudio({
           </div>
         </div>
 
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+            Scenes
+          </h3>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={anyClipBusy}
+            onClick={() => void generateAllVisuals()}
+          >
+            {anyClipBusy ? (
+              <Loader2 className="mr-1 size-4 animate-spin" />
+            ) : (
+              <Sparkles className="mr-1 size-4" />
+            )}
+            {anyClipBusy ? "Directing your scenes…" : "Generate motion for every scene"}
+          </Button>
+        </div>
+        <p className="text-[11px] text-muted-foreground -mt-2">
+          Real motion video per scene, generated from your script and product photo with your
+          fal.ai credits (about $0.07 per second of clip).
+        </p>
+
         <div className="space-y-3">
           {scenes.map((scene, i) => (
             <div key={scene.label + i} className="rounded-xl border border-border bg-muted/40 p-4">
@@ -516,9 +539,67 @@ export function ScriptStudio({
                   </Button>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Leave blank and we create a cinematic visual for this scene automatically.
-                  Uploads are hosted securely for production. Max 50MB.
+                  Or paste a public image/video URL. Uploads are hosted securely for production.
+                  Max 50MB.
                 </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs">Motion video</Label>
+                {(() => {
+                  const clip = clips[i];
+                  if (clip?.status === "done" && clip.videoUrl) {
+                    return (
+                      <div className="flex items-center gap-3">
+                        <video
+                          src={clip.videoUrl}
+                          autoPlay
+                          muted
+                          loop
+                          playsInline
+                          className="aspect-[9/16] w-20 rounded-lg border border-border object-cover"
+                        />
+                        <div className="space-y-2">
+                          <p className="text-xs text-muted-foreground">
+                            This scene will use this motion clip in the final ad.
+                          </p>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={anyClipBusy}
+                            onClick={() => void generateSceneVisual(i)}
+                          >
+                            <RefreshCw className="mr-1 size-3.5" /> Regenerate
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={anyClipBusy}
+                        onClick={() => void generateSceneVisual(i)}
+                      >
+                        {clip?.status === "queued" || clip?.status === "running" ? (
+                          <Loader2 className="mr-1 size-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="mr-1 size-4" />
+                        )}
+                        {clip?.status === "queued"
+                          ? "In the video queue…"
+                          : clip?.status === "running"
+                            ? "Directing your scene…"
+                            : "Generate motion video"}
+                      </Button>
+                      {clip?.status === "failed" && (
+                        <p className="text-xs text-destructive">{clip.error}</p>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
             </div>
