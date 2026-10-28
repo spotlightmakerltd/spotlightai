@@ -246,7 +246,7 @@ export function ScriptStudio({
 
     const started: SceneVideoStart = await startSceneVideo({
       data: {
-        visualPrompt: `Cinematic vertical advertising shot for a short-form social video ad. Scene "${scene.label}" for ${businessName || "the brand"}. ${scene.visual || scene.caption}. Photoreal, rich colour grading, dramatic lighting, smooth single camera move, plenty of clean space for caption text.`,
+        visualPrompt: `Cinematic vertical advertising shot for a short-form social video ad. Scene "${scene.label}" for ${businessName || "the brand"}. ${scene.visual || scene.onScreenText}. Photoreal, rich colour grading, dramatic lighting, smooth single camera move, plenty of clean space for caption text.`,
         ...(imageUrl ? { imageUrl } : {}),
         durationSeconds: duration,
       },
