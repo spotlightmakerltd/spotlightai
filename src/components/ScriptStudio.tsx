@@ -688,12 +688,22 @@ export function ScriptStudio({
           <div
             className="relative mx-auto flex aspect-[9/16] w-full max-w-[240px] flex-col justify-end overflow-hidden rounded-2xl border border-border p-4 pb-[18%]"
             style={{
-              background: backgrounds[0]?.trim() || productImageUrl
-                ? undefined
-                : `linear-gradient(160deg, #0f0b23 0%, ${style.highlight} 100%)`,
+              background:
+                clips[0]?.videoUrl || backgrounds[0]?.trim() || productImageUrl
+                  ? undefined
+                  : `linear-gradient(160deg, #0f0b23 0%, ${style.highlight} 100%)`,
             }}
           >
-            {(backgrounds[0]?.trim() || productImageUrl) && (
+            {clips[0]?.videoUrl ? (
+              <video
+                src={clips[0].videoUrl}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="absolute inset-0 size-full object-cover"
+              />
+            ) : (backgrounds[0]?.trim() || productImageUrl) && (
               <img
                 src={backgrounds[0]?.trim() || productImageUrl}
                 alt="Scene 1 background preview"
