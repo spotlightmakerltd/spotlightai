@@ -90,10 +90,17 @@ const stages = [
 
 
 const packFeatures: Record<string, string[]> = {
-  starter: ["20 credits, no monthly fee", "All 5 production stages", "≈ 4 full 60-second ads", "Watermarked exports"],
-  pro: ["75 credits in one pack", "Unlocks the Pro tier", "Watermark-free exports", "No production limits"],
-  studio: ["200 credits in one pack", "Watermark-free exports", "No production limits", "Best value for weekly campaigns"],
+  starter: ["10 credits, no monthly fee", "All 5 production stages", "≈ 5 short 15s ads or 3 full 30s ads", "Watermarked exports"],
+  pro: ["40 credits in one pack", "Unlocks the Pro tier", "AI motion scenes (+3 credits each)", "Watermark-free exports"],
+  studio: ["110 credits in one pack", "Unlocks the Pro tier", "AI motion scenes (+3 credits each)", "Best value for weekly campaigns"],
 } as const;
+
+const adRates = [
+  { seconds: 15, scenes: 3, credits: 2 },
+  { seconds: 30, scenes: 6, credits: 3 },
+  { seconds: 45, scenes: 9, credits: 4 },
+  { seconds: 60, scenes: 12, credits: 5 },
+] as const;
 
 function Landing() {
   const [activeStage, setActiveStage] = useState(2);
