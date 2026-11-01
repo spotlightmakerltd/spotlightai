@@ -6,7 +6,8 @@ const InputSchema = z.object({
   niche: z.string().min(1),
   campaignGoal: z.string().min(1),
   targetAudience: z.string().min(1),
-  durationSeconds: z.number().int().min(10).max(60),
+  // Ad lengths come in 5-second scene multiples (15/30/45/60).
+  durationSeconds: z.number().int().min(15).max(60),
 });
 
 export type AdScene = {
@@ -26,33 +27,38 @@ export type AdScript = {
 };
 
 function fallbackScript(i: z.infer<typeof InputSchema>): AdScript {
-  const third = Math.max(3, Math.round(i.durationSeconds / 3));
+  const count = Math.max(1, Math.round(i.durationSeconds / 5));
+  const scenes: AdScene[] = [];
+  for (let n = 0; n < count; n++) {
+    const from = `0:${String(n * 5).padStart(2, "0")}`;
+    const to = `0:${String(Math.min(i.durationSeconds, (n + 1) * 5)).padStart(2, "0")}`;
+    const label = n === 0 ? "Hook" : n === count - 1 ? "Outro" : count === 3 ? "Body" : `Body ${n}`;
+    const voiceover =
+      n === 0
+        ? `Stop scrolling. If you're ${i.targetAudience.toLowerCase()}, ${i.niche.toLowerCase()} shouldn't cost you your week.`
+        : n === count - 1
+          ? `Tap the link and let ${i.businessName} handle the rest.`
+          : n % 2 === 1
+            ? `${i.businessName} makes it simple — built specifically for ${i.niche.toLowerCase()} so you get results without the guesswork.`
+            : `Real results from people exactly like you — no guesswork, no waiting, no bloat.`;
+    const onScreenText =
+      n === 0
+        ? "STOP SCROLLING 🚨"
+        : n === count - 1
+          ? goalCta(i.campaignGoal)
+          : `Built for ${i.niche}`;
+    const visual =
+      n === 0
+        ? "Fast punch-in on face, hard cut, bold caption pop."
+        : n === count - 1
+          ? "Logo lockup, animated button, brand colors."
+          : "B-roll of the product/service in use, quick 3-beat montage.";
+    scenes.push({ label, timecode: `${from} – ${to}`, voiceover, onScreenText, visual });
+  }
   return {
     title: `${i.businessName} — ${i.campaignGoal} spot`,
     hookLine: `${i.targetAudience}: this is why ${i.niche} feels harder than it should.`,
-    scenes: [
-      {
-        label: "Hook",
-        timecode: `0:00 – 0:${String(third).padStart(2, "0")}`,
-        voiceover: `Stop scrolling. If you're ${i.targetAudience.toLowerCase()}, ${i.niche.toLowerCase()} shouldn't cost you your week.`,
-        onScreenText: "STOP SCROLLING 🚨",
-        visual: "Fast punch-in on face, hard cut, bold caption pop.",
-      },
-      {
-        label: "Body",
-        timecode: `0:${String(third).padStart(2, "0")} – 0:${String(third * 2).padStart(2, "0")}`,
-        voiceover: `${i.businessName} makes it simple — built specifically for ${i.niche.toLowerCase()} so you get results without the guesswork.`,
-        onScreenText: `Built for ${i.niche}`,
-        visual: "B-roll of the product/service in use, quick 3-beat montage.",
-      },
-      {
-        label: "Outro",
-        timecode: `0:${String(third * 2).padStart(2, "0")} – 0:${String(i.durationSeconds).padStart(2, "0")}`,
-        voiceover: `Tap the link and let ${i.businessName} handle the rest.`,
-        onScreenText: goalCta(i.campaignGoal),
-        visual: "Logo lockup, animated button, brand colors.",
-      },
-    ],
+    scenes,
     cta: goalCta(i.campaignGoal),
     hashtags: ["#smallbusiness", "#ads", `#${i.niche.replace(/\s+/g, "").toLowerCase()}`],
   };
@@ -70,12 +76,14 @@ export const generateAdScript = createServerFn({ method: "POST" })
     const apiKey = process.env["LOVABLE_API_KEY"];
     if (!apiKey) return fallbackScript(data);
 
+    // One scene per 5-second motion clip the video engine produces.
+    const sceneCount = Math.max(1, Math.round(data.durationSeconds / 5));
     const prompt = `Write a high-converting ${data.durationSeconds}-second vertical (9:16) short-form video ad script.
 Business: ${data.businessName}
 Industry/Niche: ${data.niche}
 Campaign goal: ${data.campaignGoal}
 Target audience: ${data.targetAudience}
-Return exactly three scenes labelled Hook, Body and Outro that fit ${data.durationSeconds} seconds of spoken voiceover.`;
+Return exactly ${sceneCount} scenes (label the first Hook and the last Outro, middle scenes Body). Each scene is exactly 5 seconds of screen time, and together they fill ${data.durationSeconds} seconds of spoken voiceover.`;
 
     try {
       const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
