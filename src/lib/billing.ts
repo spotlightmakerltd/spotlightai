@@ -10,30 +10,37 @@ export type CreditPack = {
   popular?: boolean;
 };
 
+/**
+ * Credit value ≈ $0.63–0.90 per credit across packs. Against the real engine
+ * cost (motion ≈ $0.07/second, base render ≈ $0.20/ad) this keeps every
+ * combination in the 80–90% gross-margin band:
+ *  - base render: 15s = 2cr · 30s = 3cr · 45s = 4cr · 60s = 5cr
+ *  - real motion: +3 credits per 5-second scene (Pro tier)
+ */
 export const CREDIT_PACKS: CreditPack[] = [
   {
     id: "starter",
     label: "Starter top-up",
-    credits: 20,
+    credits: 10,
     usdMinor: 900,
     ngnMinor: 1400000,
     tier: "free",
-    blurb: "≈ 4 full 60s ads. Keeps your current plan.",
+    blurb: "≈ 5 short 15s ads or 3 full 30s ads. Keeps your current plan.",
   },
   {
     id: "pro",
     label: "Pro pack",
-    credits: 75,
+    credits: 40,
     usdMinor: 2900,
     ngnMinor: 4500000,
     tier: "pro",
-    blurb: "Unlocks Pro: watermark-free exports, no limits.",
+    blurb: "Unlocks Pro: AI motion scenes, watermark-free exports.",
     popular: true,
   },
   {
     id: "studio",
     label: "Studio pack",
-    credits: 200,
+    credits: 110,
     usdMinor: 6900,
     ngnMinor: 10500000,
     tier: "pro",
