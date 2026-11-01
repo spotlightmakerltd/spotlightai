@@ -398,7 +398,8 @@ export function GenerateForm({
           </SelectContent>
         </Select>
         <p className="text-xs text-muted-foreground">
-          10s = 2 · 20s = 3.5 · 30s = 4.5 · 40s = 5.5 · 50s = 6.5 · 60s = 8 credits.
+          15s = 2 · 30s = 3 · 45s = 4 · 60s = 5 credits. Real motion scenes: +3 credits each
+          (Pro).
         </p>
       </div>
 

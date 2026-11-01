@@ -194,7 +194,9 @@ function buildTimeline(
   voiceoverUrls: Array<string | undefined>,
   autoBackgrounds: Array<string | undefined>,
 ) {
-  const per = input.durationSeconds / input.scenes.length;
+  // Every scene is a 5-second cut, matching the 5-second clips the motion
+  // engine produces — ad length always equals scenes × 5 seconds.
+  const per = 5;
   const size = SIZES[input.resolution];
   const scale = size.width / 1080;
   const background: Array<Record<string, unknown>> = [];

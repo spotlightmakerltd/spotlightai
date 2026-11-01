@@ -90,10 +90,17 @@ const stages = [
 
 
 const packFeatures: Record<string, string[]> = {
-  starter: ["20 credits, no monthly fee", "All 5 production stages", "≈ 4 full 60-second ads", "Watermarked exports"],
-  pro: ["75 credits in one pack", "Unlocks the Pro tier", "Watermark-free exports", "No production limits"],
-  studio: ["200 credits in one pack", "Watermark-free exports", "No production limits", "Best value for weekly campaigns"],
+  starter: ["10 credits, no monthly fee", "All 5 production stages", "≈ 5 short 15s ads or 3 full 30s ads", "Watermarked exports"],
+  pro: ["40 credits in one pack", "Unlocks the Pro tier", "AI motion scenes (+3 credits each)", "Watermark-free exports"],
+  studio: ["110 credits in one pack", "Unlocks the Pro tier", "AI motion scenes (+3 credits each)", "Best value for weekly campaigns"],
 } as const;
+
+const adRates = [
+  { seconds: 15, scenes: 3, credits: 2 },
+  { seconds: 30, scenes: 6, credits: 3 },
+  { seconds: 45, scenes: 9, credits: 4 },
+  { seconds: 60, scenes: 12, credits: 5 },
+] as const;
 
 function Landing() {
   const [activeStage, setActiveStage] = useState(2);
@@ -244,6 +251,15 @@ function Landing() {
         <section id="pricing" className="px-5 py-24 sm:px-8 lg:py-32">
           <div className="mx-auto max-w-7xl">
             <div className="mx-auto max-w-3xl text-center"><p className="landing-kicker">Simple credit pricing</p><h2 className="mt-5 text-4xl font-extrabold leading-none sm:text-6xl lg:text-7xl">One credit system. No production surprises.</h2><p className="mt-7 text-lg leading-8 text-landing-muted">Every new account starts with 5 free credits. Drafts and refinements are always free — credits are only used when your finished ad enters production.</p></div>
+            <div className="mx-auto mt-10 grid max-w-3xl gap-3 sm:grid-cols-2">
+              {adRates.map((rate) => (
+                <div key={rate.seconds} className="flex items-center justify-between gap-4 rounded-2xl border border-landing-border bg-landing-panel/40 px-5 py-4">
+                  <div><p className="text-base font-bold">{rate.seconds}-second ad</p><p className="text-xs text-landing-muted">{rate.scenes} scenes × 5 seconds</p></div>
+                  <p className="text-lg font-extrabold text-landing-foreground">{rate.credits} credits</p>
+                </div>
+              ))}
+            </div>
+            <p className="mx-auto mt-4 max-w-3xl text-center text-sm text-landing-muted">Want real AI motion footage? Add <strong className="text-landing-foreground">+3 credits per scene</strong> with any Pro pack — your ad is still fully rendered with smart visuals and voice either way.</p>
             <div className="mt-16 grid gap-5 lg:grid-cols-3 lg:items-start">
               {CREDIT_PACKS.map((pack) => (
                 <article key={pack.id} className={`pricing-card relative rounded-[2rem] border p-7 sm:p-9 ${pack.popular ? "is-featured lg:-mt-5 lg:pb-14 lg:pt-11" : "border-landing-border bg-landing-panel/35"}`}>
