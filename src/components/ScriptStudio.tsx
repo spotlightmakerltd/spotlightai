@@ -52,7 +52,7 @@ import {
 import { previewVoice } from "@/lib/voice.functions";
 import { uploadBackgroundAsset } from "@/lib/upload-asset";
 import { supabase } from "@/lib/supabase";
-import { MOTION_CREDITS_PER_SCENE } from "@/lib/pricing";
+import { MOTION_CREDITS_PER_SCENE, motionCreditsFor } from "@/lib/pricing";
 
 import type { TimelineStage } from "@/lib/timeline";
 
