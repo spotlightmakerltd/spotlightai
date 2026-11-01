@@ -51,6 +51,8 @@ import {
 } from "@/lib/fal.functions";
 import { previewVoice } from "@/lib/voice.functions";
 import { uploadBackgroundAsset } from "@/lib/upload-asset";
+import { supabase } from "@/lib/supabase";
+import { MOTION_CREDITS_PER_SCENE } from "@/lib/pricing";
 
 import type { TimelineStage } from "@/lib/timeline";
 
@@ -232,14 +234,24 @@ export function ScriptStudio({
   async function generateSceneVisual(index: number) {
     const scene = scenes[index];
     if (!scene) return;
-    const per = Math.max(5, Math.round(durationSeconds / Math.max(1, scenes.length)));
-    const duration = per >= 8 ? 10 : 5;
+    // Every scene is one 5-second clip — the motion engine's native cut length.
+    const duration = 5;
     const pasted = backgrounds[index]?.trim();
     const imageUrl = isImageUrl(pasted)
       ? pasted!
       : isImageUrl(productImageUrl)
         ? productImageUrl!
         : undefined;
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    if (!accessToken) {
+      setClips((c) => ({
+        ...c,
+        [index]: { status: "failed", error: "Your session expired — sign in again." },
+      }));
+      return;
+    }
 
     setClips((c) => ({ ...c, [index]: { status: "queued" } }));
     onStage?.("render", "Directing video scenes…", "running");
@@ -249,6 +261,7 @@ export function ScriptStudio({
         visualPrompt: `Cinematic vertical advertising shot for a short-form social video ad. Scene "${scene.label}" for ${businessName || "the brand"}. ${scene.visual || scene.onScreenText}. Photoreal, rich colour grading, dramatic lighting, smooth single camera move, plenty of clean space for caption text.`,
         ...(imageUrl ? { imageUrl } : {}),
         durationSeconds: duration,
+        accessToken,
       },
     }).catch(
       (): SceneVideoStart => ({
@@ -266,6 +279,9 @@ export function ScriptStudio({
     }
 
     const requestId = started.requestId;
+    if (typeof started.creditsLeft === "number") {
+      toast.success(`Motion scene queued — ${started.creditsLeft} credits left`);
+    }
     setClips((c) => ({ ...c, [index]: { status: "queued", requestId } }));
     let transient = 0;
     for (let attempt = 0; attempt < 120; attempt++) {
