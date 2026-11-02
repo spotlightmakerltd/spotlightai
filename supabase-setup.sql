@@ -41,7 +41,7 @@ begin
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data ->> 'full_name', ''),
-    5,
+    0,
     'free'
   )
   on conflict (id) do nothing;
