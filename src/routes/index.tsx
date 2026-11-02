@@ -18,6 +18,7 @@ import skincareImg from "@/assets/skincare-serum.jpg";
 import gymImg from "@/assets/gym-class.jpg";
 import restaurantImg from "@/assets/restaurant-dish.jpg";
 import launchImg from "@/assets/product-launch.jpg";
+import campaignImg from "@/assets/campaign-ready.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -83,7 +84,7 @@ const stages = [
     time: "~7s",
     title: "A finished ad ready for every vertical feed",
     body: "Review the final frame, download the MP4 and send it straight to TikTok, Reels, Shorts or WhatsApp.",
-    image: restaurantImg,
+    image: campaignImg,
     label: "Campaign ready",
     caption: "Built to stop thumbs. Ready to ship.",
   },
