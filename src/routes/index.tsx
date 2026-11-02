@@ -14,9 +14,10 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import productPreview from "@/assets/ad-preview-product.jpg";
-import testimonialPreview from "@/assets/ad-preview-testimonial.jpg";
-import salePreview from "@/assets/ad-preview-sale.jpg";
+import skincareImg from "@/assets/skincare-serum.jpg";
+import gymImg from "@/assets/gym-class.jpg";
+import restaurantImg from "@/assets/restaurant-dish.jpg";
+import launchImg from "@/assets/product-launch.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,7 +28,7 @@ export const Route = createFileRoute("/")({
         content: "Turn a brief into a polished vertical video ad with scripts, voice, captions and production in one workflow.",
       },
       { property: "og:title", content: "SpotlightMaker — Vertical Ads Built to Convert" },
-      { property: "og:description", content: "Five production stages. One finished vertical ad. Start with 5 free credits." },
+      { property: "og:description", content: "Five production stages. One finished vertical ad. Scripts and drafts are free to build." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -42,7 +43,7 @@ const stages = [
     time: "~8s",
     title: "A sharp brief built around your buyer",
     body: "Your offer, audience and goal are shaped into a clear production direction before the first line is written.",
-    image: productPreview,
+    image: skincareImg,
     label: "DTC skincare",
     caption: "Three drops. Fourteen days. Zero filter.",
   },
@@ -52,7 +53,7 @@ const stages = [
     time: "~14s",
     title: "Hook, body and outro written for the scroll",
     body: "Get compelling opening lines built around proven retention patterns. Swap any line and the rest re-flows.",
-    image: testimonialPreview,
+    image: gymImg,
     label: "Gym franchise",
     caption: "The 6am class nobody wants to leave.",
   },
@@ -62,7 +63,7 @@ const stages = [
     time: "~11s",
     title: "Captions that land exactly when they should",
     body: "Choose a visual system, type treatment and lower-third position that stays readable on every feed.",
-    image: salePreview,
+    image: restaurantImg,
     label: "Local restaurant",
     caption: "We only make 80 of these a night.",
   },
@@ -72,7 +73,7 @@ const stages = [
     time: "~18s",
     title: "Every scene, voice and transition brought together",
     body: "Your chosen footage, natural voice and timed captions become one cohesive, conversion-ready vertical cut.",
-    image: productPreview,
+    image: launchImg,
     label: "Product launch",
     caption: "Meet the ritual your shelf was missing.",
   },
@@ -82,7 +83,7 @@ const stages = [
     time: "~7s",
     title: "A finished ad ready for every vertical feed",
     body: "Review the final frame, download the MP4 and send it straight to TikTok, Reels, Shorts or WhatsApp.",
-    image: testimonialPreview,
+    image: restaurantImg,
     label: "Campaign ready",
     caption: "Built to stop thumbs. Ready to ship.",
   },
@@ -148,7 +149,7 @@ function Landing() {
               {[{ href: "#workflow", label: "Workflow" }, { href: "#pricing", label: "Pricing" }].map((item) => (
                 <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)} className="border-b border-landing-border py-4 text-lg font-bold">{item.label}</a>
               ))}
-              <Button asChild className="landing-primary mt-4 h-12 rounded-full"><Link to="/auth">Start free with 5 credits</Link></Button>
+              <Button asChild className="landing-primary mt-4 h-12 rounded-full"><Link to="/auth">Create your first ad</Link></Button>
             </div>
           </nav>
         )}
@@ -166,7 +167,7 @@ function Landing() {
                 SpotlightMaker writes the hook, shapes every scene, styles your captions and assembles a vertical 9:16 ad ready for TikTok, Reels, Shorts and WhatsApp.
               </p>
               <div className="hero-enter hero-enter-4 mt-10 flex max-w-xl flex-col gap-3 sm:flex-row">
-                <Button asChild size="lg" className="landing-primary h-14 flex-1 rounded-full px-7 text-base font-bold"><Link to="/auth">Start free with 5 credits <ArrowRight className="size-5" /></Link></Button>
+                <Button asChild size="lg" className="landing-primary h-14 flex-1 rounded-full px-7 text-base font-bold"><Link to="/auth">Create your first ad <ArrowRight className="size-5" /></Link></Button>
                 <Button variant="ghost" size="lg" onClick={() => document.querySelector("#workflow")?.scrollIntoView({ behavior: "smooth" })} className="h-14 flex-1 rounded-full border border-landing-border-strong bg-landing-panel/40 text-base font-bold text-landing-foreground hover:bg-landing-panel hover:text-landing-foreground"><Play className="size-4 fill-current" /> See the workflow</Button>
               </div>
             </div>
@@ -250,7 +251,7 @@ function Landing() {
 
         <section id="pricing" className="px-5 py-24 sm:px-8 lg:py-32">
           <div className="mx-auto max-w-7xl">
-            <div className="mx-auto max-w-3xl text-center"><p className="landing-kicker">Simple credit pricing</p><h2 className="mt-5 text-4xl font-extrabold leading-none sm:text-6xl lg:text-7xl">One credit system. No production surprises.</h2><p className="mt-7 text-lg leading-8 text-landing-muted">Every new account starts with 5 free credits. Drafts and refinements are always free — credits are only used when your finished ad enters production.</p></div>
+            <div className="mx-auto max-w-3xl text-center"><p className="landing-kicker">Simple credit pricing</p><h2 className="mt-5 text-4xl font-extrabold leading-none sm:text-6xl lg:text-7xl">One credit system. No production surprises.</h2><p className="mt-7 text-lg leading-8 text-landing-muted">Writing scripts, hooks and refinements is always free — credits are only used when your finished ad enters production.</p></div>
             <div className="mx-auto mt-10 grid max-w-3xl gap-3 sm:grid-cols-2">
               {adRates.map((rate) => (
                 <div key={rate.seconds} className="flex items-center justify-between gap-4 rounded-2xl border border-landing-border bg-landing-panel/40 px-5 py-4">

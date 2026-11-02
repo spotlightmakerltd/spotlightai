@@ -17,7 +17,7 @@ export const Route = createFileRoute("/auth")({
       {
         name: "description",
         content:
-          "Create a free SpotlightMaker account and get 5 credits to launch your first high-converting video ad.",
+          "Create a free SpotlightMaker account and start building high-converting video ads in minutes.",
       },
       { property: "og:title", content: "Sign in — SpotlightMaker" },
       {
@@ -152,7 +152,7 @@ function AuthPage() {
       toast.success("Check your inbox to confirm your email, then log in.");
       return;
     }
-    toast.success("Account created — 5 free credits added");
+    toast.success("Account created — welcome to SpotlightMaker");
     void navigate({ to: "/dashboard", replace: true });
   }
 
@@ -272,7 +272,7 @@ function AuthPage() {
                     {busy && <Loader2 className="mr-1 size-4 animate-spin" />} Create free account
                   </Button>
                   <p className="text-center text-xs text-muted-foreground">
-                    Includes 5 free credits · no card required
+                    Free to sign up · no card required
                   </p>
                 </form>
               </TabsContent>

@@ -6,7 +6,7 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text,
   full_name text,
-  credits numeric not null default 5,
+  credits numeric not null default 0,
   subscription_tier text not null default 'free',
   created_at timestamptz not null default now()
 );
