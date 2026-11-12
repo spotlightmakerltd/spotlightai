@@ -23,6 +23,8 @@ jobs:
         run: |
           bun install
           bun run build
+          echo "=== CHECKING OUTPUT DIRECTORIES ==="
+          find .output -maxdepth 3
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -35,4 +37,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        
+         
