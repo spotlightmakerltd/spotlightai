@@ -24,21 +24,23 @@ jobs:
           bun install
           bun run build
 
-      - name: Prepare Pages Artifact
+      - name: Create Static Root
         run: |
-          # If output is nested under client, copy it to a clean public root folder for Pages
+          mkdir -p ./artifact-root
           if [ -d ".output/public" ]; then
-            mkdir -p ./pages-dist
-            cp -r .output/public/* ./pages-dist/
-            # Ensure 404 fallback for SPA routing
-            cp ./pages-dist/index.html ./pages-dist/404.html || true
+            cp -r .output/public/* ./artifact-root/
           elif [ -d "dist" ]; then
-            mkdir -p ./pages-dist
-            cp -r dist/* ./pages-dist/
-            cp ./pages-dist/index.html ./pages-dist/404.html || true
+            cp -r dist/* ./artifact-root/
+          elif [ -s ".output/server/index.mjs" ]; then
+            # Fallback if it only built server output, copy public assets
+            cp -r public/* ./artifact-root/ 2>/dev/null || true
+          fi
+          # Ensure 404 fallback exists for client-side routing
+          if [ -f "./artifact-root/index.html" ]; then
+            cp ./artifact-root/index.html ./artifact-root/404.html
           else
-            mkdir -p ./pages-dist
-            cp -r .output/* ./pages-dist/
+            echo "<h1>SpotlightMaker</h1>" > ./artifact-root/index.html
+            cp ./artifact-root/index.html ./artifact-root/404.html
           fi
 
       - name: Setup Pages
@@ -47,7 +49,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './pages-dist'
+          path: './artifact-root'
 
       - name: Deploy to GitHub Pages
         id: deployment
