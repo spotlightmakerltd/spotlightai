@@ -23,8 +23,23 @@ jobs:
         run: |
           bun install
           bun run build
-          echo "=== CHECKING OUTPUT DIRECTORIES ==="
-          find .output -maxdepth 3
+
+      - name: Prepare Pages Artifact
+        run: |
+          # If output is nested under client, copy it to a clean public root folder for Pages
+          if [ -d ".output/public" ]; then
+            mkdir -p ./pages-dist
+            cp -r .output/public/* ./pages-dist/
+            # Ensure 404 fallback for SPA routing
+            cp ./pages-dist/index.html ./pages-dist/404.html || true
+          elif [ -d "dist" ]; then
+            mkdir -p ./pages-dist
+            cp -r dist/* ./pages-dist/
+            cp ./pages-dist/index.html ./pages-dist/404.html || true
+          else
+            mkdir -p ./pages-dist
+            cp -r .output/* ./pages-dist/
+          fi
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -32,9 +47,9 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.output/public'
+          path: './pages-dist'
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-         
+        
