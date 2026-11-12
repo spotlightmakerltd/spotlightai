@@ -16,17 +16,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         
-            - name: Install Bun
+      - name: Install Bun
         uses: oven-sh/setup-bun@v1
 
-      - name: Copy index.html & Build
+       - name: Copy index.html & Build
         run: |
           if [ -f "public/index.html" ]; then
             cp public/index.html ./index.html
-          elif [ -f "index.html" ]; then
-            echo "index.html exists"
-          else
-            cp ./lovable/index.html ./index.html 2>/dev/null || echo "No index.html template found"
           fi
           bun install
           bun run build
