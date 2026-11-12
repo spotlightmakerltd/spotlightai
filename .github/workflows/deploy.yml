@@ -15,11 +15,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Install Bun
         uses: oven-sh/setup-bun@v1
 
-       - name: Copy index.html & Build
+      - name: Copy index.html & Build
         run: |
           if [ -f "public/index.html" ]; then
             cp public/index.html ./index.html
@@ -34,11 +34,7 @@ jobs:
             cp -r .output/public/* ./artifact-root/
           elif [ -d "dist" ]; then
             cp -r dist/* ./artifact-root/
-          elif [ -s ".output/server/index.mjs" ]; then
-            # Fallback if it only built server output, copy public assets
-            cp -r public/* ./artifact-root/ 2>/dev/null || true
           fi
-          # Ensure 404 fallback exists for client-side routing
           if [ -f "./artifact-root/index.html" ]; then
             cp ./artifact-root/index.html ./artifact-root/404.html
           else
