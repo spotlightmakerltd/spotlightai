@@ -15,12 +15,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v1
-
-      - name: Install dependencies & Build
+      
+      - name: Ensure root index.html & Install dependencies & Build
         run: |
+          if [ -f "public/index.html" ]; then
+            cp public/index.html ./index.html
+          fi
           bun install
           bun run build
 
