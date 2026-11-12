@@ -18,15 +18,21 @@ jobs:
 
       - name: Install Bun
         uses: oven-sh/setup-bun@v1
-
+        
       - name: Copy index.html & Build
         run: |
-          if [ -f "public/index.html" ]; then
+          if [ -f "app/index.html" ]; then
+            cp app/index.html ./index.html
+          elif [ -f "src/index.html" ]; then
+            cp src/index.html ./index.html
+          elif [ -f "public/index.html" ]; then
             cp public/index.html ./index.html
+          else
+            echo "<!DOCTYPE html><html><head><title>SpotlightMaker</title></head><body><div id=\"app\"></div></body></html>" > ./index.html
           fi
           bun install
           bun run build
-
+          
       - name: Create Static Root
         run: |
           mkdir -p ./artifact-root
