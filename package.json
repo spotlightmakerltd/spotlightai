@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
-    "preview": "vite preview",
+    "build": "vinxi build",
+    "build:dev": "vinxi build --mode development",
+    "preview": "vinxi preview",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
