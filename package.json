@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vinxi build",
+    "build": "bunx vinxi build",
     "build:dev": "vinxi build --mode development",
     "preview": "vinxi preview",
     "lint": "eslint .",
