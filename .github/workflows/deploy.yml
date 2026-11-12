@@ -24,6 +24,10 @@ jobs:
           bun install
           bun run build
 
+      - name: Add SPA 404 fallback
+        run: |
+          cp .output/public/index.html .output/public/404.html
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
@@ -35,4 +39,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-         
+        
